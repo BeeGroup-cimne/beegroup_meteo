@@ -1,3 +1,4 @@
+-i https://217.182.160.171:9002/bgruser/stable/
 bee-meteo==0.0.3
 certifi==2018.11.29
 chardet==3.0.4
@@ -8,7 +9,6 @@ mock==2.0.0
 numpy==1.15.4
 pandas==0.23.4
 pbr==5.1.1
-pkg-resources==0.0.0
 pymongo==3.7.2
 python-dateutil==2.7.5
 python-forecastio==1.4.0
