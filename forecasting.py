@@ -14,7 +14,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     # Check if the forecasting is needed for this configuration
     if not 'forecasting' in params:
         exit(0)
-    locations = utils.read_locations(params)
+    try:
+        locations = utils.read_locations(params)
+    except NotImplementedError as e:
+        print("Unable to load locations for config {}: {}".format(config, e))
+        continue
     # Download the data and upload it to Mongo
     for loc in locations:
         # Download the meteo forecastings
