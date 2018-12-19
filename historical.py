@@ -6,6 +6,7 @@ import json
 import pytz
 from pymongo import MongoClient, DESCENDING
 from dateutil.relativedelta import relativedelta
+import dateutil
 from datetime import datetime
 import os
 import glob
@@ -36,11 +37,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         print("Weather forecasting data for stationId {}".format(stationId))
         # Define the ts_from and ts_to
         try:
-            cursor_ts = mongo[params['historical']].find({"stationId": stationId}).sort([("time",DESCENDING)])
+            cursor_ts = mongo[params['historical']["mongo_collection"]].find({"stationId": stationId}).sort([("time",DESCENDING)])
             ts_from = pytz.UTC.localize(cursor_ts[0]["time"])
             ts_from -= relativedelta(hours=48)
         except:
-            ts_from = pytz.UTC.localize(datetime.utcnow()-relativedelta(years=2))
+            ts_from = dateutil.parser.parse(params['historical']["timestamp_from"])
             ts_to = pytz.UTC.localize(datetime.utcnow())
 
         # Download the historical weather data
@@ -53,11 +54,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
         # Upload the data to Mongo
         r_d = r.to_dict('records')
-        if mongo[params['mongodb']['historical']].find_one({"stationId": stationId}) is None:
-            mongo[params['mongodb']['historical']].insert_many(r_d)
+        if mongo[params['historical']["mongo_collection"]].find_one({"stationId": stationId}) is None:
+            mongo[params['historical']["mongo_collection"]].insert_many(r_d)
         else:
             for i in xrange(len(r_d)):
-                mongo[params['mongodb']['historical']].update_many(
+                mongo[params['historical']["mongo_collection"]].update_many(
                     {
                         "stationId": stationId,
                         "time": r_d[i]["time"]

@@ -47,7 +47,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         stationId = "{:03.2f},{:03.2f}".format(loc[0],loc[1])
         print("Weather forecasting data for stationId {}".format(stationId))
         try:
-            cursor_ts = mongo[params['forecasting']].find({"stationId": stationId}).sort([("time",DESCENDING)])
+            cursor_ts = mongo[params['forecasting']["mongo_collection"]].find({"stationId": stationId}).sort([("time",DESCENDING)])
             ts = pytz.UTC.localize(cursor_ts[0]["time"])
             ts -= relativedelta(hours=96)
         except:
