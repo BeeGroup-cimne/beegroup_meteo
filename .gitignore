@@ -1,4 +1,4 @@
 /meteo_data
-config.json
 *.log
-/venv
+venv
+.idea/
