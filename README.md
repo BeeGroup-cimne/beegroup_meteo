@@ -28,7 +28,13 @@ To configure a new project into the program, set a <project>.json file in the fo
 	},
 	"locations": {
 		"list": ["41.50,2.00"], //list of lat,long strings
-		"file": "file.csv", //csv with lat,long values
+		"file": {
+			"filename": "file_name",
+			"sep": "\t",
+			"columns": ["postalCode","lat","lon","heigth","country","unused1","unused2","unused3"],
+			"lat_column": "lat",
+			"lon_column": "lon"
+		}, //csv with lat,long values
 		"mongo": "collection" //collection with lat_long values.
 	} //only one method must be set
 }

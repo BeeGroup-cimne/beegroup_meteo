@@ -23,7 +23,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
     try:
         locations = utils.read_locations(params)
-    except NotImplementedError as e:
+    except Exception as e:
         print("Unable to load locations for config {}: {}".format(config, e))
         continue
 
