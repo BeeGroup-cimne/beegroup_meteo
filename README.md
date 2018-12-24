@@ -9,12 +9,51 @@ To configure a new project into the program, set a <project>.json file in the fo
 ```json
 {
 	"forecasting": {
-		"mongo_collection": "forecasting_meteo"
+		"mongo_collection": "forecasting_meteo",
+		"locations": {
+		  "list": [{"stationId": "40,2", "lat": 40, "lon": 2}], //list of lat,long strings
+            "file": {
+                "filename": "file_name",
+                "sep": "\t",
+                "columns": ["postalCode","lat","lon","heigth","country","unused1","unused2","unused3"],
+                "lat_column": "lat",
+                "lon_column": "lon",
+                "station_column": "postalCode"
+            }, //csv with lat,long values
+		  "mongo": "collection" //collection with lat_long values.
+	    } //only one method must be set
 	}, //if not set, the forecasting data will not be executed
 	"historical": {
 		"mongo_collection": "historical_meteo",
-		"timestamp_from": "2018-11-01T00:00:00Z"
+		"timestamp_from": "2018-11-01T00:00:00Z",
+		"locations": {
+            "list": [{"stationId": "40,2", "lat": 40, "lon": 2}], //list of lat,long strings
+            "file": {
+                "filename": "file_name",
+                "sep": "\t",
+                "columns": ["postalCode","lat","lon","heigth","country","unused1","unused2","unused3"],
+                "lat_column": "lat",
+                "lon_column": "lon",
+                "station_column": "postalCode"
+            }, //csv with lat,long values
+            "mongo": "collection" //collection with lat_long values.
+        } //only one method must be set
 	}, //if not set, the historical data will not be executed
+	"meteocat": {
+		"mongo_collection": "meteocat_collection",
+		"locations": {
+            "list": [{"stationId": "40,2", "lat": 40, "lon": 2}], //list of lat,long strings
+            "file": {
+                "filename": "file_name",
+                "sep": "\t",
+                "columns": ["postalCode","lat","lon","heigth","country","unused1","unused2","unused3"],
+                "lat_column": "lat",
+                "lon_column": "lon",
+                "station_column": "postalCode"
+            }, //csv with lat,long values
+            "mongo": "collection" //collection with lat_long values.
+        } //only one method must be set
+    },
 	"mongodb": {
 		"host": "host",
 		"port": "port as integer",
@@ -25,18 +64,7 @@ To configure a new project into the program, set a <project>.json file in the fo
 	"keys": {
 		"darksky": "dark_sky_api_key",
 		"CAMS": ["cams_mail_1", "cams_mail_2"]
-	},
-	"locations": {
-		"list": ["41.50,2.00"], //list of lat,long strings
-		"file": {
-			"filename": "file_name",
-			"sep": "\t",
-			"columns": ["postalCode","lat","lon","heigth","country","unused1","unused2","unused3"],
-			"lat_column": "lat",
-			"lon_column": "lon"
-		}, //csv with lat,long values
-		"mongo": "collection" //collection with lat_long values.
-	} //only one method must be set
+	}
 }
 ```
 

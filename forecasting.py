@@ -15,11 +15,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     if not 'forecasting' in params:
         exit(0)
     try:
-        locations = utils.read_locations(params)
+        locations = utils.read_locations(params['forecasting'])
     except Exception as e:
         print("Unable to load locations for config {}: {}".format(config, e))
         continue
     # Download the data and upload it to Mongo
     for loc in locations:
         # Download the meteo forecastings
-        r = forecast_weather(params['keys']['darksky'], loc[0], loc[1], csv_export=True, wd=working_directory)
+        r = forecast_weather(params['keys']['darksky'], loc[1], loc[2], csv_export=True, wd=working_directory)

@@ -1,5 +1,5 @@
 -i https://217.182.160.171:9002/bgruser/stable/
-bee-meteo==0.0.3
+bee-meteo==0.0.5
 certifi==2018.11.29
 chardet==3.0.4
 cookies==2.2.1

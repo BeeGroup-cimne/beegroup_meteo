@@ -22,7 +22,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         exit(0)
 
     try:
-        locations = utils.read_locations(params)
+        locations = utils.read_locations(params['historical'])
     except Exception as e:
         print("Unable to load locations for config {}: {}".format(config, e))
         continue
@@ -37,9 +37,10 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
 
     # Download the data and upload it to Mongo
-    for loc in locations:
+    for stationId, latitude, longitude in locations:
 
-        stationId = "{:03.2f},{:03.2f}".format(loc[0],loc[1])
+        if not stationId:
+            stationId = "{lat:.2f}_{lon:.2f}".format(lat=latitude, lon=longitude)
         print("Weather forecasting data for stationId {}".format(stationId))
         # Define the ts_from and ts_to
         try:
@@ -51,11 +52,12 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             ts_to = pytz.UTC.localize(datetime.utcnow())
 
         # Download the historical weather data
-        r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], loc[0], loc[1], ts_from, ts_to, csv_export=False)['hourly']
+        r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
+                               csv_export=True, wd=working_directory, stationId=stationId)['hourly']
 
         # Add the location info
-        r['latitude'] = loc[0]
-        r['longitude'] = loc[1]
+        r['latitude'] = latitude
+        r['longitude'] = longitude
         r['stationId'] = stationId
 
         # Upload the data to Mongo

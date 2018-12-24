@@ -41,14 +41,14 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
     # Create the location list to download
     try:
-        locations = utils.read_locations(params)
+        locations = utils.read_locations(params['forecasting'])
     except Exception as e:
         print("Unable to load locations for config {}: {}".format(config, e))
         continue
 
     # Download the data and upload it to Mongo
     for loc in locations:
-        stationId = "{:03.2f},{:03.2f}".format(loc[0],loc[1])
+        stationId = loc[0]
         print("Weather forecasting data for stationId {}".format(stationId))
         try:
             cursor_ts = mongo[params['forecasting']["mongo_collection"]].find({"stationId": stationId}).sort([("time",DESCENDING)])
@@ -58,7 +58,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             ts = None
 
         # Read the meteo forecastings
-        r = pd.read_csv("{}/meteo_data/{:.2f}_{:.2f}_forecasting_hourly.csv".format(working_directory, loc[0], loc[1]))
+        r = pd.read_csv("{}/meteo_data/{:.2f}_{:.2f}_forecasting_hourly.csv".format(working_directory, loc[1], loc[2]))
 
         # Rearrange the time columns
         r.time = pd.to_datetime(r.time).dt.tz_localize(pytz.UTC)
@@ -85,8 +85,8 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         rr.columns = rr.columns.map('_'.join)
 
         # Add the location info
-        rr['latitude'] = loc[0]
-        rr['longitude'] = loc[1]
+        rr['latitude'] = loc[1]
+        rr['longitude'] = loc[2]
         rr['stationId'] = stationId
         rr['time'] = rr.index
 
