@@ -6,21 +6,37 @@ import io
 import numpy as np
 
 
-def read_locations(params):
+def read_locations(params, mongo_connection=None):
     # Create the location list to download
     if 'list' in params['locations']:
-        locations = [[x['stationId'],x['lat'],x['lon']] for x in params['locations']['list']]
+        locations = []
+        for loc in params['locations']['list']:
+            if 'stationId' in loc:
+                locations.append([loc['stationId'], loc['lat'], loc['lon']])
+            else:
+                locations.append([None, loc['lat'], loc['lon']])
     elif 'file' in params['locations']:
         try:
             sep = params['locations']['file']['sep'] if 'sep' in params['locations']['file'] else ","
             header = params['locations']['file']['header'] if 'header' in params['locations']['file'] else None
             columns = params['locations']['file']['columns'] if 'columns' in params['locations']['file'] else None
             df = pd.read_csv(params['locations']['file']['filename'], sep=sep, header=header, names=columns)
-            locations = [[row[1][params['locations']['file']['station_column']], float(row[1][params['locations']['file']['lat_column']]), float(row[1][params['locations']['file']['lon_column']])] for k, row in df.iterrows()]
+            locations = [[row[1][params['locations']['file']['station_column']],
+                          float(row[1][params['locations']['file']['lat_column']]),
+                          float(row[1][params['locations']['file']['lon_column']])] for k, row in df.iterrows()]
         except Exception as e:
             raise Exception("File configuration is not correct {}".format(e))
     elif 'mongo' in params['locations']:
-        raise NotImplementedError("reading from mongo not implemented yet")
+        stations = mongo_connection[params['locations']['mongo']['collection']].find(
+            params['locations']['file']['query'],
+            {params['locations']['file']['station_column']: 1,
+             params['locations']['file']['lat_column']: 1,
+             params['locations']['file']['lon_column']: 1
+             }
+        )
+        locations = [[s[params['locations']['file']['station_column']],
+                      float(s[params['locations']['file']['lat_column']]),
+                      float(s[params['locations']['file']['lon_column']])] for s in stations]
     else:
         raise Exception("locations must be specified")
     return locations

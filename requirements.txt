@@ -1,4 +1,4 @@
--i https://217.182.160.171:9002/bgruser/stable/
+beautifulsoup4==4.6.3
 bee-meteo==0.0.5
 certifi==2018.11.29
 chardet==3.0.4
@@ -16,4 +16,5 @@ pytz==2018.7
 requests==2.20.1
 responses==0.10.4
 six==1.11.0
+tailer==0.4.1
 urllib3==1.24.1

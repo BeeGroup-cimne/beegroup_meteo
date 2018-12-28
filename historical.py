@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Library imports
+import pandas as pd
 from bee_meteo import historical_weather
 import json
 import pytz
@@ -12,6 +13,7 @@ import os
 import glob
 import utils
 
+#working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 
 for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
@@ -21,12 +23,6 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     if not 'historical' in params:
         exit(0)
 
-    try:
-        locations = utils.read_locations(params['historical'])
-    except Exception as e:
-        print("Unable to load locations for config {}: {}".format(config, e))
-        continue
-
     # Mongo connection
     client = MongoClient(params['mongodb']['host'], int(params['mongodb']['port']))
     client[params['mongodb']['db']].authenticate(
@@ -35,12 +31,20 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     )
     mongo = client[params['mongodb']['db']]
 
+    try:
+        locations = utils.read_locations(params['historical'], mongo)
+    except Exception as e:
+        print("Unable to load locations for config {}: {}".format(config, e))
+        continue
+
+
 
     # Download the data and upload it to Mongo
     for stationId, latitude, longitude in locations:
 
         if not stationId:
             stationId = "{lat:.2f}_{lon:.2f}".format(lat=latitude, lon=longitude)
+        data_file = "{}/meteo_data/{}_hist_hourly.csv".format(working_directory, stationId)
         print("Weather forecasting data for stationId {}".format(stationId))
         # Define the ts_from and ts_to
         try:
@@ -49,12 +53,24 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             ts_from -= relativedelta(hours=48)
         except:
             ts_from = dateutil.parser.parse(params['historical']["timestamp_from"])
-            ts_to = pytz.UTC.localize(datetime.utcnow())
+        ts_to = pytz.UTC.localize(datetime.utcnow())
 
-        # Download the historical weather data
-        r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
-                               csv_export=True, wd=working_directory, stationId=stationId)['hourly']
+        if os.path.isfile(data_file):
+            meteo_df = pd.read_csv(data_file)
+            meteo_df = meteo_df.set_index('time')
+            meteo_df.index = pd.to_datetime(meteo_df.index)
+            meteo_df['time'] = meteo_df.index
+            meteo_df = meteo_df.tz_localize(pytz.UTC)
+            meteo_df = meteo_df.sort_index()
+        else:
+            meteo_df = None
 
+        if not meteo_df is None and ts_from >= min(meteo_df.index) and ts_to-relativedelta(hours=6) <= max(meteo_df.index):
+            r = meteo_df
+        else:
+            # Download the historical weather data
+            r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
+                                   csv_export=True, wd=working_directory, stationId=stationId)['hourly']
         # Add the location info
         r['latitude'] = latitude
         r['longitude'] = longitude

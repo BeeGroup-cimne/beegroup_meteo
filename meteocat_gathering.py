@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import re
 import pandas as pd
 import os
+import pytz
 
 from utils import read_last_csv, remove_last_lines_csv, scrap_data
 
@@ -15,8 +16,8 @@ from utils import read_last_csv, remove_last_lines_csv, scrap_data
 working_directory = os.path.dirname(os.path.abspath(__file__))
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
 now = datetime.now()
-today = datetime(now.year,now.month, now.day)
-
+timezone = "Europe/Madrid"
+today = datetime(now.year,now.month, now.day, tzinfo=pytz.timezone(timezone))
 def scrap_stations():
     url = 'http://www.meteo.cat/observacions/llistat-xema'
     r = requests.get(url)
@@ -57,8 +58,11 @@ def scrapp_meteo_for_date(date, codi, lat, long):
                       [list.__getitem__,"arg", 0],
                       [datetime.strptime,"arg","%H:%M"],
                       [datetime.time, "arg"],
-                      [datetime.combine, date.date(), "arg"]
+                      [datetime.combine, date.date(), "arg"],
+                      [pytz.timezone(timezone).localize, "arg"],
+                      [datetime.astimezone, "arg", pytz.UTC]
                     ]
+
                    ),
                   ('temperature', 'td', 0, [[float, "arg"]]),
                   ('humidity', 'td', 3, [[float, "arg"]]),
@@ -81,19 +85,20 @@ for s in list(stations.iterrows()):
         hist = read_last_csv(data_file.format(wd=working_directory, station=s[1].stationId), 48)
         hist = hist.set_index('time')
         hist.index = pd.to_datetime(hist.index)
+        hist = hist.tz_localize(pytz.UTC)
         hist = hist.sort_index()
     except:
         hist = pd.DataFrame()
     headers = True
     if not hist.empty:
         last_date = max(hist.index)
-        last_date = datetime(last_date.year, last_date.month, last_date.day)
+        last_date = datetime(last_date.year, last_date.month, last_date.day, tzinfo=pytz.UTC)
         hist = hist[hist.index >= last_date]
         remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
         headers = False
     else:
         last_date = today - timedelta(days=10)
-    date_list = pd.date_range(last_date,today)
+    date_list = pd.date_range(last_date.astimezone(pytz.UTC),today.astimezone(pytz.UTC))
 
     for date in date_list:
         new_meteo = pd.DataFrame(scrapp_meteo_for_date(date, s[1].stationId, lat=s[1].latitude, long=s[1].longitude))
@@ -102,4 +107,5 @@ for s in list(stations.iterrows()):
         hist = hist.append(new_meteo)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='first')]
+        hist = hist.resample("H").mean()
     hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers)
