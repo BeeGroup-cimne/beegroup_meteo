@@ -51,8 +51,8 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         stationId = loc[0]
         print("Weather forecasting data for stationId {}".format(stationId))
         try:
-            cursor_ts = mongo[params['forecasting']["mongo_collection"]].find({"stationId": stationId}).sort([("time",DESCENDING)])
-            ts = pytz.UTC.localize(cursor_ts[0]["time"])
+            station_info = mongo[params['mongodb']["stations_collection"]].find_one({"stationId": stationId})
+            ts = pytz.UTC.localize(station_info["forecasting_time"])
             ts -= relativedelta(hours=96)
         except:
             ts = None
@@ -102,6 +102,10 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
                 },
             upsert=True)
         print("{} items were uploaded to MongoDB".format(len(rr_d)))
-
+        last_time = max(rr.index)
+        mongo[params['mongodb']["stations_collection"]].update(
+            {"$set":{"forecasting_time": last_time}},
+            upsert=True
+        )
     print("Closing MongoDB client")
     client.close()

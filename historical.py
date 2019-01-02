@@ -48,12 +48,13 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         print("Weather forecasting data for stationId {}".format(stationId))
         # Define the ts_from and ts_to
         try:
-            cursor_ts = mongo[params['historical']["mongo_collection"]].find({"stationId": stationId}).sort([("time",DESCENDING)])
-            ts_from = pytz.UTC.localize(cursor_ts[0]["time"])
+            station_info = mongo[params['mongodb']["stations_collection"]].find_one({"stationId": stationId})
+            ts_from = pytz.UTC.localize(station_info["historic_time"])
             ts_from -= relativedelta(hours=48)
         except:
             ts_from = dateutil.parser.parse(params['historical']["timestamp_from"])
         ts_to = pytz.UTC.localize(datetime.utcnow())
+
 
         if os.path.isfile(data_file):
             meteo_df = pd.read_csv(data_file)
@@ -91,6 +92,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
                     },
                 upsert=True)
         print("{} items were uploaded to MongoDB".format(len(r_d)))
-
+        #save last time to the mongo_collection
+        last_time = max(r.index)
+        mongo[params['mongodb']["stations_collection"]].update(
+            {"$set":{"historic_time": last_time}},
+            upsert=True
+        )
     print("Closing MongoDB client")
     client.close()
