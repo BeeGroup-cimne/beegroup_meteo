@@ -2,6 +2,7 @@
 """
     scripts to gather meteo_data from aemet using api
 """
+import pytz
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
@@ -59,9 +60,25 @@ for stationId, data in data_by_station:
             final_dataframe[key] = data[value]
     final_dataframe['stationId'] = [stationId]*len(data.index)
     final_dataframe.index = pd.to_datetime(final_dataframe['time'])
+    final_dataframe.tz_localize(pytz.UTC)
     final_dataframe.sort_index()
-    if os.path.isfile(data_file.format(wd=working_directory, station=stationId)):
+
+
+    # read file of historical data
+    try:
+        hist = read_last_csv(data_file.format(wd=working_directory, station=stationId), 48)
+        hist = hist.set_index('time')
+        hist.index = pd.to_datetime(hist.index)
+        hist = hist.tz_localize(pytz.UTC)
+        hist = hist.sort_index()
         headers = False
-    else:
+    except:
+        hist = pd.DataFrame()
         headers = True
-    final_dataframe.to_csv(data_file.format(wd=working_directory, station=stationId), mode='a', header=headers)
+
+    hist = hist.append(final_dataframe)
+    hist = hist.sort_index()
+    hist = hist[~hist.index.duplicated(keep='first')]
+    hist = hist.resample("H").mean()
+
+    hist.to_csv(data_file.format(wd=working_directory, station=stationId), mode='a', header=headers)
