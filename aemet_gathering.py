@@ -60,8 +60,8 @@ for stationId, data in data_by_station:
             final_dataframe[key] = data[value]
     final_dataframe['stationId'] = [stationId]*len(data.index)
     final_dataframe.index = pd.to_datetime(final_dataframe['time'])
-    final_dataframe.tz_localize(pytz.UTC)
-    final_dataframe.sort_index()
+    final_dataframe = final_dataframe.tz_localize(pytz.UTC)
+    final_dataframe = final_dataframe.sort_index()
 
 
     # read file of historical data
