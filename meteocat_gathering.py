@@ -59,7 +59,7 @@ def scrapp_meteo_for_date(date, codi, lat, long):
                       [datetime.strptime,"arg","%H:%M"],
                       [datetime.time, "arg"],
                       [datetime.combine, date.date(), "arg"],
-                      [pytz.timezone(pytz.UTC).localize, "arg"]
+                      [pytz.UTC.localize, "arg"]
                     ]
 
                    ),
