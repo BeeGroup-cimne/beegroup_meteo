@@ -75,12 +75,12 @@ for stationId, data in data_by_station:
     except:
         hist = pd.DataFrame()
         headers = True
-    if not hist.empty():
+    if not hist.empty:
         remove_last_lines_csv(data_file.format(wd=working_directory, station=stationId), len(hist.index))
 
     hist = hist.append(final_dataframe)
     hist = hist.sort_index()
-    hist = hist[~hist.index.duplicated(keep='first')]
+    hist = hist[~hist.index.duplicated(keep='last')]
     hist = hist.resample("H").mean()
 
     hist.to_csv(data_file.format(wd=working_directory, station=stationId), mode='a', header=headers)
