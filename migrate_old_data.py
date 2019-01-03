@@ -7,7 +7,7 @@ import os
 import glob
 
 from bs4 import BeautifulSoup
-
+from calendar import monthrange
 from utils import scrap_data
 
 
@@ -52,7 +52,29 @@ def scrap_stations():
     ]
     return scrap_data(columns, rows[1:])
 
-
+def get_datetime_24_error(x):
+    #parse the data that can have errors
+    year = x[0:4]
+    month = x[4:6]
+    day = x[6:8]
+    hour = x[8:10]
+    minute = x[10:12]
+    # if the hour is 24, it has errors. add 1 to day and put hour to 00
+    if hour == "24":
+        day = "{:02d}".format(int(day)+1)
+        hour = "00"
+    # however, for the last day of month, next day would not work with day +1
+    # we need to add +1 to month and reset day to 01
+    max_days = monthrange(int(year), int(month))[1]
+    if int(day) > max_days:
+        day = "01"
+        month = "{:02d}".format(int(month)+1)
+    # again, the error repeats if we are in the last month (and last day) of year
+    # we need to add +1 to year and reset month to 01
+    if int(month) > 12:
+        month = "01"
+        year = "{:04d}".format(int(year)+1)
+    return datetime.strptime("{}{}{}{}{}".format(year, month, day, hour, minute), "%Y%m%d%H%M")
 
 working_directory = os.getcwd()
 save_file = "{wd}/meteo_data_check/{stationId}_hist_hourly.csv"
@@ -84,7 +106,7 @@ for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
             lon = None
     df_f['latitude'] = [lat] * len(df_f.index)
     df_f['longitude'] = [lon] * len(df_f.index)
-    df_f['time'] = df_f['time'].astype(np.int64).apply(lambda x: datetime.strptime(str(x), "%Y%m%d%H%M"))
+    df_f['time'] = df_f['time'].astype(np.int64).apply(lambda x: get_datetime_24_error(str(x)))
     df_f = df_f.set_index('time')
     df_f = df_f.sort_index()
     df_f.to_csv(save_file.format(wd=working_directory, stationId=station))
