@@ -1,9 +1,15 @@
+import re
 from datetime import datetime
 import requests
 import pandas as pd
 import numpy as np
 import os
 import glob
+
+from bs4 import BeautifulSoup
+
+from utils import scrap_data
+
 
 def get_meteo_data():
     headers = {
@@ -21,6 +27,32 @@ def get_meteo_data():
     raise Exception("Error in performing the request {}".format(r.text))
 
 
+def scrap_stations():
+    url = 'http://www.meteo.cat/observacions/llistat-xema'
+    r = requests.get(url)
+    html = BeautifulSoup(r.text, 'html.parser')
+    table = html.select('#llistaEstacions')[0]
+    rows = table.select('tr')
+    columns = [
+        ('stationId', 'td', 2, [
+            [re.findall, "\[(.*?)\]", "arg"],
+            [list.__getitem__, "arg", 0]
+        ]),
+        ('latitude', 'td', 3,[
+            [unicode.replace, "arg", ",", "."],
+            [float, "arg"]
+        ]),
+        ('longitude', 'td', 4,[
+            [unicode.replace, "arg", ",", "."],
+            [float, "arg"]
+        ]),
+        ('status', 'td', 8, [
+
+        ])
+    ]
+    return scrap_data(columns, rows[1:])
+
+
 
 working_directory = os.getcwd()
 save_file = "{wd}/meteo_data_check/{stationId}_hist_hourly.csv"
@@ -29,7 +61,8 @@ columns = {0: 'stationId', 1: 'time', 2: 'windSpeed', 3: 'windBearing', 6: 'temp
            7: 'humidity', 8: 'GHI', 9: 'pressure', 10: 'precipAccumulation'}
 # get stations information
 
-station_df = get_meteo_data()
+station_aemet_df = get_meteo_data()
+station_meteocat_df = scrap_stations()
 
 for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
     df = pd.read_csv(x, header=None, names=range(0,12))
@@ -37,13 +70,18 @@ for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
     for key, value in columns.items():
         df_f[value] = df[key]
     station= df_f['stationId'][0]
-    this_station = station_df[station_df.idema == station]
+    this_station = station_aemet_df[station_aemet_df.idema == station]
     if not this_station.empty:
-    	lat = this_station.iloc[0].lat
-    	lon = this_station.iloc[0].lon
+        lat = this_station.iloc[0].lat
+        lon = this_station.iloc[0].lon
     else:
-	lat = None
-	lon = None
+        this_station = station_meteocat_df[station_meteocat_df.stationId == station]
+        if not this_station.empty:
+            lat = this_station.iloc[0].latitude
+            lon = this_station.iloc[0].longitude
+        else:
+            lat = None
+            lon = None
     df_f['latitude'] = [lat] * len(df_f.index)
     df_f['longitude'] = [lon] * len(df_f.index)
     df_f['time'] = df_f['time'].astype(np.int64).apply(lambda x: datetime.strptime(str(x), "%Y%m%d%H%M"))
