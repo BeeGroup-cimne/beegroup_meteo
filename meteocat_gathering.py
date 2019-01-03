@@ -12,7 +12,7 @@ import pytz
 
 from utils import read_last_csv, remove_last_lines_csv, scrap_data
 
-#working_directory = os.getcwd()
+working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
 now = datetime.now()
@@ -45,34 +45,37 @@ def scrap_stations():
 
 
 def scrapp_meteo_for_date(date, codi, lat, long):
-    url = 'http://www.meteo.cat/observacions/xema/dades?codi={}&dia={}Z'.format(codi, date.strftime("%Y-%m-%dT%H:%M"))
-    print(url)
-    r = requests.get(url)
-    html = BeautifulSoup(r.text, 'html.parser')
-    table = html.select('.tblperiode')[0]
-    rows = table.select('tr')
-    columns = [
-                  ('time', 'th', 0, [
-                      [unicode.strip, "arg"],
-                      [unicode.split, "arg"],
-                      [list.__getitem__,"arg", 0],
-                      [datetime.strptime,"arg","%H:%M"],
-                      [datetime.time, "arg"],
-                      [datetime.combine, date.date(), "arg"],
-                      [pytz.UTC.localize, "arg"]
+    try:
+        url = 'http://www.meteo.cat/observacions/xema/dades?codi={}&dia={}Z'.format(codi, date.strftime("%Y-%m-%dT%H:%M"))
+        print(url)
+        r = requests.get(url)
+        html = BeautifulSoup(r.text, 'html.parser')
+        table = html.select('.tblperiode')[0]
+        rows = table.select('tr')
+        columns = [
+                      ('time', 'th', 0, [
+                          [unicode.strip, "arg"],
+                          [unicode.split, "arg"],
+                          [list.__getitem__,"arg", 0],
+                          [datetime.strptime,"arg","%H:%M"],
+                          [datetime.time, "arg"],
+                          [datetime.combine, date.date(), "arg"],
+                          [pytz.UTC.localize, "arg"]
+                        ]
+
+                       ),
+                      ('temperature', 'td', 0, [[float, "arg"]]),
+                      ('humidity', 'td', 3, [[float, "arg"]]),
+                      ('precipAccumulation', 'td', 4, [[float, "arg"]]),
+                      ('windSpeed', 'td', 5, [[float, "arg"]]),
+                      ('windBearing','td',6, [[float, "arg"]]),
+                      ('pressure', 'td', 8, [[float, "arg"]]),
+                      ('GHI', 'td', 9, [[float, "arg"]])
                     ]
-
-                   ),
-                  ('temperature', 'td', 0, [[float, "arg"]]),
-                  ('humidity', 'td', 3, [[float, "arg"]]),
-                  ('precipAccumulation', 'td', 4, [[float, "arg"]]),
-                  ('windSpeed', 'td', 5, [[float, "arg"]]),
-                  ('windBearing','td',6, [[float, "arg"]]),
-                  ('pressure', 'td', 8, [[float, "arg"]]),
-                  ('GHI', 'td', 9, [[float, "arg"]])
-                ]
-
-    return scrap_data(columns, rows[1:], stationId=codi, latitude=lat, longitude=long)
+        return scrap_data(columns, rows[1:], stationId=codi, latitude=lat, longitude=long)
+    except Exception as e:
+        print("Error in {} {}:{}".format(codi, date, e))
+        return {}
 
 
 stations = pd.DataFrame.from_records(scrap_stations())
@@ -101,6 +104,8 @@ for s in list(stations.iterrows()):
 
     for date in date_list:
         new_meteo = pd.DataFrame(scrapp_meteo_for_date(date, s[1].stationId, lat=s[1].latitude, long=s[1].longitude))
+        if new_meteo.empty:
+            continue
         new_meteo = new_meteo.set_index('time')
         new_meteo = new_meteo.sort_index()
         hist = hist.append(new_meteo)
