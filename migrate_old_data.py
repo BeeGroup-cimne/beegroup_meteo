@@ -77,7 +77,7 @@ def get_datetime_24_error(x):
     return datetime.strptime("{}{}{}{}{}".format(year, month, day, hour, minute), "%Y%m%d%H%M")
 
 working_directory = os.getcwd()
-save_file = "{wd}/meteo_data_check/{stationId}_hist_hourly.csv"
+save_file = "{wd}/meteo_data/{stationId}_hist_hourly.csv"
 
 columns = {0: 'stationId', 1: 'time', 2: 'windSpeed', 3: 'windBearing', 6: 'temperature',
            7: 'humidity', 8: 'GHI', 9: 'pressure', 10: 'precipAccumulation'}
