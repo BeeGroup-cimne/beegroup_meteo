@@ -99,7 +99,7 @@ for s in list(stations.iterrows()):
         remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
         headers = False
     else:
-        last_date = today - timedelta(days=10)
+        last_date = today - timedelta(days=365)
     date_list = pd.date_range(last_date.astimezone(pytz.UTC),today.astimezone(pytz.UTC))
 
     for date in date_list:
