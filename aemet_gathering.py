@@ -75,6 +75,8 @@ for stationId, data in data_by_station:
     except:
         hist = pd.DataFrame()
         headers = True
+    if not hist.empty():
+        remove_last_lines_csv(data_file.format(wd=working_directory, station=stationId), len(hist.index))
 
     hist = hist.append(final_dataframe)
     hist = hist.sort_index()
