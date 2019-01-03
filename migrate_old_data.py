@@ -62,7 +62,7 @@ columns = {0: 'stationId', 1: 'time', 2: 'windSpeed', 3: 'windBearing', 6: 'temp
 # get stations information
 
 station_aemet_df = get_meteo_data()
-station_meteocat_df = scrap_stations()
+station_meteocat_df = pd.DataFrame.from_records(scrap_stations())
 
 for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
     df = pd.read_csv(x, header=None, names=range(0,12))
