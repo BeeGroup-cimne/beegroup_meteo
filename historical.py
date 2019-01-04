@@ -13,7 +13,7 @@ import os
 import glob
 import utils
 
-#working_directory = os.getcwd()1690A
+#working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 
 for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
@@ -92,19 +92,21 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
         # Upload the data to Mongo
         r_d = r.to_dict('records')
-        if r_d:
-            if mongo[params['historical']["mongo_collection"]].find_one({"stationId": stationId}) is None:
-                mongo[params['historical']["mongo_collection"]].insert_many(r_d)
-            else:
-                for i in xrange(len(r_d)):
-                    mongo[params['historical']["mongo_collection"]].update_many(
-                        {
-                            "stationId": stationId,
-                            "time": r_d[i]["time"]
-                        }, {
-                            "$set": r_d[i]
-                        },
-                    upsert=True)
+        if not r_d:
+            print("No data could be found by station {}".format(stationId))
+            continue
+        if mongo[params['historical']["mongo_collection"]].find_one({"stationId": stationId}) is None:
+            mongo[params['historical']["mongo_collection"]].insert_many(r_d)
+        else:
+            for i in xrange(len(r_d)):
+                mongo[params['historical']["mongo_collection"]].update_many(
+                    {
+                        "stationId": stationId,
+                        "time": r_d[i]["time"]
+                    }, {
+                        "$set": r_d[i]
+                    },
+                upsert=True)
         print("{} items were uploaded to MongoDB".format(len(r_d)))
         #save last time to the mongo_collection
         last_time = max(r.index)
