@@ -35,9 +35,17 @@ def read_locations(params, mongo_connection=None):
              config['lon_column']: 1
              }
         )
-        locations = [[s[config['station_column']],
-                      float(s[config['lat_column']]) if config['lat_column'] in s else None,
-                      float(s[config['lon_column']]) if config['lon_column'] in s else None] for s in stations]
+        locations = []
+        station_ids = set()
+        for s in stations:
+            if s[config['station_column']] in station_ids:
+                continue
+            station_ids.add(s[config['station_column']])
+            locations.append([
+                s[config['station_column']],
+                float(s[config['lat_column']]) if config['lat_column'] in s else None,
+                float(s[config['lon_column']]) if config['lon_column'] in s else None
+            ])
     else:
         raise Exception("locations must be specified")
     return locations
