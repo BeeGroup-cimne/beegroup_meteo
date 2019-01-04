@@ -72,13 +72,13 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             time_offset=relativedelta(hours=0)
 
         if not meteo_df is None and ts_from >= min(meteo_df.index) and ts_to - time_offset <= max(meteo_df.index):
-            r = meteo_df
+            r = meteo_df[ts_from:ts_to]
         elif 'keys' in params and latitude and longitude:
             # Download the historical weather data
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
                                    csv_export=True, wd=working_directory, stationId=stationId)['hourly']
         elif meteo_df is not None:
-            r=meteo_df
+            r = meteo_df[ts_from:ts_to]
         else:
             print("No data could be found by station {}".format(stationId))
             continue
