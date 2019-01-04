@@ -104,6 +104,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         print("{} items were uploaded to MongoDB".format(len(rr_d)))
         last_time = max(rr.index)
         mongo[params['mongodb']["stations_collection"]].update(
+            {"stationId": stationId},
             {"$set":{"forecasting_time": last_time}},
             upsert=True
         )

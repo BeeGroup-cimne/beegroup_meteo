@@ -105,6 +105,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         #save last time to the mongo_collection
         last_time = max(r.index)
         mongo[params['mongodb']["stations_collection"]].update(
+            {"stationId": stationId},
             {"$set":{"historic_time": last_time}},
             upsert=True
         )
