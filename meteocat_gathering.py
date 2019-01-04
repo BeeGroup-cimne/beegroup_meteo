@@ -110,6 +110,6 @@ for s in list(stations.iterrows()):
         new_meteo = new_meteo.sort_index()
         hist = hist.append(new_meteo)
         hist = hist.sort_index()
-        hist = hist[~hist.index.duplicated(keep='first')]
+        hist = hist[~hist.index.duplicated(keep='last')]
         hist = hist.resample("H").mean()
     hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers)
