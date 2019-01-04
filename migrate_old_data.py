@@ -109,4 +109,5 @@ for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
     df_f['time'] = df_f['time'].astype(np.int64).apply(lambda x: get_datetime_24_error(str(x)))
     df_f = df_f.set_index('time')
     df_f = df_f.sort_index()
+    df_f = df_f.resample("H").mean()
     df_f.to_csv(save_file.format(wd=working_directory, stationId=station))
