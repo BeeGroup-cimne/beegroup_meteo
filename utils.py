@@ -27,16 +27,17 @@ def read_locations(params, mongo_connection=None):
         except Exception as e:
             raise Exception("File configuration is not correct {}".format(e))
     elif 'mongo' in params['locations']:
-        stations = mongo_connection[params['locations']['mongo']['collection']].find(
-            params['locations']['mongo']['query'],
-            {params['locations']['mongo']['station_column']: 1,
-             params['locations']['mongo']['lat_column']: 1,
-             params['locations']['mongo']['lon_column']: 1
+        config = params['locations']['mongo']
+        stations = mongo_connection[config['collection']].find(
+            config['query'],
+            {config['station_column']: 1,
+             config['lat_column']: 1,
+             config['lon_column']: 1
              }
         )
-        locations = [[s[params['locations']['mongo']['station_column']],
-                      float(s[params['locations']['mongo']['lat_column']]),
-                      float(s[params['locations']['mongo']['lon_column']])] for s in stations]
+        locations = [[s[config['station_column']],
+                      float(s[config['lat_column']]) if config['lat_column'] in s else None,
+                      float(s[config['lon_column']]) if config['lon_column'] in s else None] for s in stations]
     else:
         raise Exception("locations must be specified")
     return locations
