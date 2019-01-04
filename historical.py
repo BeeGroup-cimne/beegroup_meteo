@@ -52,7 +52,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             ts_from = pytz.UTC.localize(station_info["historic_time"])
             ts_from -= relativedelta(hours=48)
         except:
-            ts_from = dateutil.parser.parse(params['historical']["timestamp_from"])
+            ts_from = dateutil.parser.parse(params['historical']["timestamp_from_first_upload"])
         ts_to = pytz.UTC.localize(datetime.utcnow())
 
 
@@ -66,7 +66,12 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         else:
             meteo_df = None
 
-        if not meteo_df is None and ts_from >= min(meteo_df.index) and ts_to-relativedelta(hours=6) <= max(meteo_df.index):
+        if 'gather_last_time' in params['historical'] and not params['historical']['gather_last_time']:
+            time_offset = relativedelta(hours=24)
+        else:
+            time_offset=relativedelta(hours=0)
+
+        if not meteo_df is None and ts_from >= min(meteo_df.index) and ts_to - time_offset <= max(meteo_df.index):
             r = meteo_df
         else:
             # Download the historical weather data
