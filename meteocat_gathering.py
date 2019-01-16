@@ -95,6 +95,7 @@ for s in list(stations.iterrows()):
         last_date = max(hist.index)
         last_date = datetime(last_date.year, last_date.month, last_date.day, tzinfo=pytz.UTC)
         hist = hist[hist.index >= last_date]
+        hist_columns = hist.columns
         remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
         headers = False
     else:
@@ -109,7 +110,10 @@ for s in list(stations.iterrows()):
         new_meteo = new_meteo.sort_index()
         new_meteo = new_meteo.resample("H").mean()
         hist_columns = hist.columns
-        hist = hist.append(new_meteo, sort=False)[hist_columns]
+        if hist_columns.empty:
+            hist = hist.append(new_meteo, sort=False)[hist_columns]
+        else:
+            hist = hist.append(new_meteo, sort=False)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='last')]
         hist = hist.resample("H").mean()
