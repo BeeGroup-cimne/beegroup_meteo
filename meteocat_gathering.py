@@ -59,8 +59,7 @@ def scrapp_meteo_for_date(date, codi, lat, long):
                           [list.__getitem__,"arg", 0],
                           [datetime.strptime,"arg","%H:%M"],
                           [datetime.time, "arg"],
-                          [datetime.combine, date.date(), "arg"],
-                          [pytz.UTC.localize, "arg"]
+                          [datetime.combine, date.date(), "arg"]
                         ]
 
                        ),
@@ -86,7 +85,6 @@ for s in list(stations.iterrows()):
     try:
         hist = read_last_csv(data_file.format(wd=working_directory, station=s[1].stationId), 48)
         hist.index = pd.to_datetime(hist['time'])
-        hist = hist.tz_localize(pytz.UTC)
         hist = hist.sort_index()
     except:
         hist = pd.DataFrame()

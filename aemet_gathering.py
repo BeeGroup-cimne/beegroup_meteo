@@ -59,7 +59,6 @@ for stationId, data in data_by_station:
         else:
             final_dataframe[key] = data[value]
     final_dataframe.index = pd.to_datetime(final_dataframe['time'])
-    final_dataframe = final_dataframe.tz_localize(pytz.UTC)
     final_dataframe = final_dataframe.sort_index()
     final_dataframe = final_dataframe.resample("H").mean()
 
@@ -67,7 +66,6 @@ for stationId, data in data_by_station:
     try:
         hist = read_last_csv(data_file.format(wd=working_directory, station=stationId), 48)
         hist.index = pd.to_datetime(hist['time'])
-        hist = hist.tz_localize(pytz.UTC)
         hist = hist.sort_index()
         headers = False
     except:
