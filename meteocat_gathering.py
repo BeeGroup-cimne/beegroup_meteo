@@ -85,8 +85,7 @@ for s in list(stations.iterrows()):
     #read file of historical data
     try:
         hist = read_last_csv(data_file.format(wd=working_directory, station=s[1].stationId), 48)
-        hist = hist.set_index('time')
-        hist.index = pd.to_datetime(hist.index)
+        hist.index = pd.to_datetime(hist['time'])
         hist = hist.tz_localize(pytz.UTC)
         hist = hist.sort_index()
     except:
@@ -106,10 +105,10 @@ for s in list(stations.iterrows()):
         new_meteo = pd.DataFrame(scrapp_meteo_for_date(date, s[1].stationId, lat=s[1].latitude, long=s[1].longitude))
         if new_meteo.empty:
             continue
-        new_meteo = new_meteo.set_index('time')
+        new_meteo.index = new_meteo['time']
         new_meteo = new_meteo.sort_index()
-        hist = hist.append(new_meteo)
+        hist = hist.append(new_meteo, sort=False)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='last')]
         hist = hist.resample("H").mean()
-    hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers)
+    hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers, index=None)
