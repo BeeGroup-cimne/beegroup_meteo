@@ -61,7 +61,7 @@ for stationId, data in data_by_station:
     final_dataframe.index = pd.to_datetime(final_dataframe['time'])
     final_dataframe = final_dataframe.tz_localize(pytz.UTC)
     final_dataframe = final_dataframe.sort_index()
-
+    final_dataframe = final_dataframe.resample("H").mean()
 
     # read file of historical data
     try:
