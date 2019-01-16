@@ -107,7 +107,8 @@ for s in list(stations.iterrows()):
             continue
         new_meteo.index = new_meteo['time']
         new_meteo = new_meteo.sort_index()
-        hist = hist.append(new_meteo, sort=False)
+        hist_columns = hist.columns
+        hist = hist.append(new_meteo, sort=False)[hist_columns]
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='last')]
         hist = hist.resample("H").mean()

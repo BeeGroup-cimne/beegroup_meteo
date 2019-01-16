@@ -75,8 +75,8 @@ for stationId, data in data_by_station:
         headers = True
     if not hist.empty:
         remove_last_lines_csv(data_file.format(wd=working_directory, station=stationId), len(hist.index))
-
-    hist = hist.append(final_dataframe, sort=False)
+    hist_columns = hist.columns
+    hist = hist.append(final_dataframe, sort=False)[hist_columns]
     hist = hist.sort_index()
     hist = hist[~hist.index.duplicated(keep='last')]
     hist = hist.resample("H").mean()
