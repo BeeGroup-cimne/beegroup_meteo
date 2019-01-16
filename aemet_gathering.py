@@ -76,12 +76,12 @@ for stationId, data in data_by_station:
     if not hist.empty:
         remove_last_lines_csv(data_file.format(wd=working_directory, station=stationId), len(hist.index))
     hist_columns = hist.columns
-    if hist_columns.empty:
-        hist = hist.append(final_dataframe, sort=False)[hist_columns]
-    else:
-        hist = hist.append(final_dataframe, sort=False)
+    hist = hist.append(final_dataframe, sort=False)
     hist = hist.sort_index()
     hist = hist[~hist.index.duplicated(keep='last')]
     hist = hist.resample("H").mean()
-
+    hist['time'] = hist.index
+    hist['stationId'] = stationId
+    if not hist_columns.empty:
+        hist = hist[hist_columns]
     hist.to_csv(data_file.format(wd=working_directory, station=stationId), mode='a', header=headers, index=False)

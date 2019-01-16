@@ -99,6 +99,7 @@ for s in list(stations.iterrows()):
         remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
         headers = False
     else:
+        hist_columns = pd.DataFrame()
         last_date = today - timedelta(days=365)
     date_list = pd.date_range(last_date.astimezone(pytz.UTC),today.astimezone(pytz.UTC))
 
@@ -109,12 +110,12 @@ for s in list(stations.iterrows()):
         new_meteo.index = new_meteo['time']
         new_meteo = new_meteo.sort_index()
         new_meteo = new_meteo.resample("H").mean()
-        hist_columns = hist.columns
-        if hist_columns.empty:
-            hist = hist.append(new_meteo, sort=False)[hist_columns]
-        else:
-            hist = hist.append(new_meteo, sort=False)
+        hist = hist.append(new_meteo, sort=False)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='last')]
         hist = hist.resample("H").mean()
+    hist['time'] = hist.index
+    hist['stationId'] = s[1].stationId
+    if not hist_columns.empty:
+        hist = hist[hist_columns]
     hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers, index=None)
