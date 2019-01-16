@@ -2,7 +2,6 @@
 """
     scripts to gather meteo_data from aemet using api
 """
-import pytz
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
@@ -16,7 +15,7 @@ from utils import read_last_csv, remove_last_lines_csv, scrap_data
 working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
-now = datetime.now()
+now = datetime.utcnow()
 today = datetime(now.year,now.month, now.day)
 
 def get_meteo_data():

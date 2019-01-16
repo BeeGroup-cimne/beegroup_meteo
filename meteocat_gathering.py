@@ -8,16 +8,15 @@ from datetime import datetime, timedelta
 import re
 import pandas as pd
 import os
-import pytz
 
 from utils import read_last_csv, remove_last_lines_csv, scrap_data
 
 working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
-now = datetime.now()
+now = datetime.utcnow()
 timezone = "Europe/Madrid"
-today = datetime(now.year,now.month, now.day, tzinfo=pytz.timezone(timezone))
+today = datetime(now.year,now.month, now.day)
 def scrap_stations():
     url = 'http://www.meteo.cat/observacions/llistat-xema'
     r = requests.get(url)
@@ -91,7 +90,7 @@ for s in list(stations.iterrows()):
     headers = True
     if not hist.empty:
         last_date = max(hist.index)
-        last_date = datetime(last_date.year, last_date.month, last_date.day, tzinfo=pytz.UTC)
+        last_date = datetime(last_date.year, last_date.month, last_date.day)
         hist = hist[hist.index >= last_date]
         hist_columns = hist.columns
         remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
@@ -99,7 +98,7 @@ for s in list(stations.iterrows()):
     else:
         hist_columns = pd.DataFrame()
         last_date = today - timedelta(days=365)
-    date_list = pd.date_range(last_date.astimezone(pytz.UTC),today.astimezone(pytz.UTC))
+    date_list = pd.date_range(last_date,today)
 
     for date in date_list:
         new_meteo = pd.DataFrame(scrapp_meteo_for_date(date, s[1].stationId, lat=s[1].latitude, long=s[1].longitude))
