@@ -73,7 +73,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
         if not meteo_df is None and ts_from >= min(meteo_df.index) and ts_to - time_offset <= max(meteo_df.index):
             r = meteo_df.loc[ts_from:ts_to]
-        elif 'keys' in params and latitude and longitude:
+        elif 'keys' in params and latitude is not None and longitude is not None:
             # Download the historical weather data
             gather_solar = params['historical']['gather_solar_radiation'] if 'gather_solar_radiation' in params['historical'] else False
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
