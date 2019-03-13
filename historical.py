@@ -84,11 +84,11 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             continue
         # Add the location info if it comes from location
         if latitude:
-            r['latitude'] = latitude
+            r.loc['latitude'] = latitude
         if longitude:
-            r['longitude'] = longitude
+            r.loc['longitude'] = longitude
         if stationId:
-            r['stationId'] = stationId
+            r.loc['stationId'] = stationId
 
         # Upload the data to Mongo
         r_d = r.to_dict('records')
