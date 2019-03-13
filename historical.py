@@ -110,8 +110,8 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         print("{} items were uploaded to MongoDB".format(len(r_d)))
         #save last time to the mongo_collection
         last_time = max(r.index)
-        station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) == 1 else None
-        station_lon = r.longitude.dropna().unique()[0] if 'longitude' in r and len(r.longitude.dropna().unique()) == 1 else None
+        station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) > 1 else None
+        station_lon = r.longitude.dropna().unique()[0] if 'longitude' in r and len(r.longitude.dropna().unique()) > 1 else None
         mongo[params['mongodb']["stations_collection"]].update(
             {"stationId": stationId},
             {"$set":{"historic_time": last_time, "longitude": station_lon, "latitude": station_lat}},
@@ -119,3 +119,21 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         )
     print("Closing MongoDB client")
     client.close()
+
+
+"""
+for stationId, latitude, longitude in locations:
+    data_file = "{}/meteo_data/{}_hist_hourly.csv".format(working_directory, stationId)
+    if os.path.isfile(data_file):
+        meteo_df = pd.read_csv(data_file)
+        meteo_df = meteo_df.set_index('time')
+        meteo_df.index = pd.to_datetime(meteo_df.index)
+        meteo_df['time'] = meteo_df.index
+        meteo_df = meteo_df.tz_localize(pytz.UTC)
+        meteo_df = meteo_df.sort_index()
+        try:
+            latitude = [x for x in meteo_df.latitude.dropna().unique()][0]
+            longitude= [x for x in meteo_df.longitude.dropna().unique()][0]
+        except:
+            print(data_file)
+"""
