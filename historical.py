@@ -110,8 +110,8 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         print("{} items were uploaded to MongoDB".format(len(r_d)))
         #save last time to the mongo_collection
         last_time = max(r.index)
-        station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) > 1 else None
-        station_lon = r.longitude.dropna().unique()[0] if 'longitude' in r and len(r.longitude.dropna().unique()) > 1 else None
+        station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) >= 1 else None
+        station_lon = r.longitude.dropna().unique()[0] if 'longitude' in r and len(r.longitude.dropna().unique()) >= 1 else None
         mongo[params['mongodb']["stations_collection"]].update(
             {"stationId": stationId},
             {"$set":{"historic_time": last_time, "longitude": station_lon, "latitude": station_lat}},
