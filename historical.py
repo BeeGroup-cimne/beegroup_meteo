@@ -119,21 +119,3 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         )
     print("Closing MongoDB client")
     client.close()
-
-
-"""
-for stationId, latitude, longitude in locations:
-    data_file = "{}/meteo_data/{}_hist_hourly.csv".format(working_directory, stationId)
-    if os.path.isfile(data_file):
-        meteo_df = pd.read_csv(data_file)
-        meteo_df = meteo_df.set_index('time')
-        meteo_df.index = pd.to_datetime(meteo_df.index)
-        meteo_df['time'] = meteo_df.index
-        meteo_df = meteo_df.tz_localize(pytz.UTC)
-        meteo_df = meteo_df.sort_index()
-        try:
-            latitude = [x for x in meteo_df.latitude.dropna().unique()][0]
-            longitude= [x for x in meteo_df.longitude.dropna().unique()][0]
-        except:
-            print(data_file)
-"""
