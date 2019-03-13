@@ -79,17 +79,17 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
                                    csv_export=True, solar_radiation = gather_solar, wd=working_directory, stationId=stationId)['hourly']
         elif meteo_df is not None:
-            r = meteo_df[ts_from:ts_to]
+            r = meteo_df.iloc[ts_from:ts_to]
         else:
             print("No data could be found by station {}".format(stationId))
             continue
         # Add the location info if it comes from location
         if latitude:
-            r.loc['latitude'] = latitude
+            r['latitude'] = latitude
         if longitude:
-            r.loc['longitude'] = longitude
+            r['longitude'] = longitude
         if stationId:
-            r.loc['stationId'] = stationId
+            r['stationId'] = stationId
 
         # Upload the data to Mongo
         r_d = r.to_dict('records')
