@@ -2,6 +2,8 @@
 """
     scripts to gather meteo_data from aemet using api
 """
+import json
+
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
@@ -14,6 +16,9 @@ from utils import read_last_csv, remove_last_lines_csv, scrap_data
 
 working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
+with open('general_config.json') as f:
+    config = json.load(f)
+working_directory = config['data_directory']
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
 now = datetime.utcnow()
 today = datetime(now.year,now.month, now.day)

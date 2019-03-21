@@ -3,5 +3,6 @@
 venv
 .idea/
 config.json
+general_config.json
 *.pyc
 .DS_Store
