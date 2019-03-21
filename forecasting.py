@@ -9,7 +9,7 @@ import utils
 working_directory = os.path.dirname(os.path.abspath(__file__))
 with open('general_config.json') as f:
     config = json.load(f)
-working_directory = config['data_directory']
+data_directory = config['data_directory']
 
 for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     with open(config) as f:
@@ -25,4 +25,4 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     # Download the data and upload it to Mongo
     for loc in locations:
         # Download the meteo forecastings
-        r = forecast_weather(params['keys']['darksky'], loc[1], loc[2], csv_export=True, wd=working_directory)
+        r = forecast_weather(params['keys']['darksky'], loc[1], loc[2], csv_export=True, wd=data_directory)

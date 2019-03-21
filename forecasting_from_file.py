@@ -26,7 +26,7 @@ def resampling_forecasting(x):
 working_directory = os.path.dirname(os.path.abspath(__file__))
 with open('general_config.json') as f:
     config = json.load(f)
-working_directory = config['data_directory']
+data_directory = config['data_directory']
 for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     with open(config) as f:
         params = json.load(f)
@@ -61,7 +61,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             ts = None
 
         # Read the meteo forecastings
-        r = pd.read_csv("{}/meteo_data/{:.2f}_{:.2f}_forecasting_hourly.csv".format(working_directory, loc[1], loc[2]))
+        r = pd.read_csv("{}/meteo_data/{:.2f}_{:.2f}_forecasting_hourly.csv".format(data_directory, loc[1], loc[2]))
 
         # Rearrange the time columns
         r.time = pd.to_datetime(r.time).dt.tz_localize(pytz.UTC)

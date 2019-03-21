@@ -80,7 +80,7 @@ def get_datetime_24_error(x):
 working_directory = os.getcwd()
 with open('general_config.json') as f:
     config = json.load(f)
-working_directory = config['data_directory']
+data_directory = config['data_directory']
 save_file = "{wd}/meteo_data/{stationId}_hist_hourly.csv"
 
 columns = {0: 'stationId', 1: 'time', 2: 'windSpeed', 3: 'windBearing', 6: 'temperature',
@@ -90,7 +90,7 @@ columns = {0: 'stationId', 1: 'time', 2: 'windSpeed', 3: 'windBearing', 6: 'temp
 station_aemet_df = get_meteo_data()
 station_meteocat_df = pd.DataFrame.from_records(scrap_stations())
 
-for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
+for x in glob.glob("{}/migrate_data/*.met".format(data_directory)):
     df = pd.read_csv(x, header=None, names=range(0,12))
     df_f = pd.DataFrame()
     for key, value in columns.items():
@@ -114,4 +114,4 @@ for x in glob.glob("{}/migrate_data/*.met".format(working_directory)):
     df_f = df_f.set_index('time')
     df_f = df_f.sort_index()
     df_f = df_f.resample("H").mean()
-    df_f.to_csv(save_file.format(wd=working_directory, stationId=station))
+    df_f.to_csv(save_file.format(wd=data_directory, stationId=station))

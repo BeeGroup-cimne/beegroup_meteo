@@ -17,7 +17,7 @@ import utils
 working_directory = os.path.dirname(os.path.abspath(__file__))
 with open('general_config.json') as f:
     config = json.load(f)
-working_directory = config['data_directory']
+data_directory = config['data_directory']
 for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
     with open(config) as f:
         params = json.load(f)
@@ -46,7 +46,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
 
         if not stationId:
             stationId = "{lat:.2f}_{lon:.2f}".format(lat=latitude, lon=longitude)
-        data_file = "{}/meteo_data/{}_hist_hourly.csv".format(working_directory, stationId)
+        data_file = "{}/meteo_data/{}_hist_hourly.csv".format(data_directory, stationId)
         print("Weather forecasting data for stationId {}".format(stationId))
         # Define the ts_from and ts_to
         try:
@@ -79,7 +79,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             # Download the historical weather data
             gather_solar = params['historical']['gather_solar_radiation'] if 'gather_solar_radiation' in params['historical'] else False
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
-                                   csv_export=True, solar_radiation = gather_solar, wd=working_directory, stationId=stationId)['hourly']
+                                   csv_export=True, solar_radiation = gather_solar, wd=data_directory, stationId=stationId)['hourly']
         elif meteo_df is not None:
             r = meteo_df.loc[ts_from:ts_to]
         else:

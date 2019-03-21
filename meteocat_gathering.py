@@ -17,7 +17,7 @@ working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 with open('general_config.json') as f:
     config = json.load(f)
-working_directory = config['data_directory']
+data_directory = config['data_directory']
 data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
 now = datetime.utcnow()
 timezone = "Europe/Madrid"
@@ -87,7 +87,7 @@ stations = stations[stations.status == u"Operativa"]
 for s in list(stations.iterrows()):
     #read file of historical data
     try:
-        hist = read_last_csv(data_file.format(wd=working_directory, station=s[1].stationId), 48)
+        hist = read_last_csv(data_file.format(wd=data_directory, station=s[1].stationId), 48)
         hist.index = pd.to_datetime(hist['time'])
         hist = hist.sort_index()
     except:
@@ -98,7 +98,7 @@ for s in list(stations.iterrows()):
         last_date = datetime(last_date.year, last_date.month, last_date.day)
         hist = hist[hist.index >= last_date]
         hist_columns = hist.columns
-        remove_last_lines_csv(data_file.format(wd=working_directory, station=s[1].stationId), len(hist.index))
+        remove_last_lines_csv(data_file.format(wd=data_directory, station=s[1].stationId), len(hist.index))
         headers = False
     else:
         hist_columns = pd.DataFrame()
@@ -120,4 +120,4 @@ for s in list(stations.iterrows()):
     hist['stationId'] = s[1].stationId
     if not hist_columns.empty:
         hist = hist[hist_columns]
-    hist.to_csv(data_file.format(wd=working_directory, station=s[1].stationId), mode='a', header=headers, index=None)
+    hist.to_csv(data_file.format(wd=data_directory, station=s[1].stationId), mode='a', header=headers, index=None)
