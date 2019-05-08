@@ -111,7 +111,10 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
                     },
                 upsert=True)
         print("{} items were uploaded to MongoDB".format(len(r_d)))
-        has_solar = not r.GHI.isnull().all()
+        if 'GHI' in r:
+            has_solar = not r.GHI.isnull().all()
+        else:
+            has_solar = False
         #save last time to the mongo_collection
         last_time = max(r.index)
         station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) >= 1 else None
