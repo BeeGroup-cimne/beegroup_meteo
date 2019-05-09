@@ -10,9 +10,9 @@ def darksky_solar_stations(params, mongo_connection=None):
         config = params['gather_solar_radiation']['mongo']
         stations = mongo_connection[config['collection']].find(
             {config['solar_station_column']: True},
-            {config['solar_station_column']: 1}
+            {'stationId': 1}
         )
-        return [x[config['solar_station_column']] for x in stations]
+        return [x['stationId'] for x in stations]
     return []
 def read_locations(params, mongo_connection=None):
     # Create the location list to download
