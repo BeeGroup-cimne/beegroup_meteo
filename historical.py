@@ -78,7 +78,10 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         elif 'keys' in params and latitude is not None and longitude is not None:
             # Download the historical weather data
             # check if solar cams must be activated:
-            solar_stations = utils.darksky_solar_stations(params['historical'], mongo)
+            if 'gather_solar_radiation' in params['historical']:
+                solar_stations = utils.darksky_solar_stations(params['historical'], mongo)
+            else:
+                solar_stations = []
             gather_solar = True if stationId in solar_stations else False
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
                                    csv_export=True, solar_radiation = gather_solar, wd=data_directory, stationId=stationId)['hourly']
