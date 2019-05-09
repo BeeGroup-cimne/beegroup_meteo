@@ -77,7 +77,8 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             r = meteo_df.loc[ts_from:ts_to]
         elif 'keys' in params and latitude is not None and longitude is not None:
             # Download the historical weather data
-            gather_solar = params['historical']['gather_solar_radiation'] if 'gather_solar_radiation' in params['historical'] else False
+            solar_stations = params['historical']['gather_solar_radiation'] if 'gather_solar_radiation' in params['historical'] else []
+            gather_solar = True if stationId in solar_stations else False
             r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
                                    csv_export=True, solar_radiation = gather_solar, wd=data_directory, stationId=stationId)['hourly']
         elif meteo_df is not None:
@@ -92,7 +93,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             r['longitude'] = longitude
         if stationId:
             r['stationId'] = stationId
-
+        r.index = pd.to_datetime(r.time)
         # Upload the data to Mongo
         r_d = r.to_dict('records')
         if not r_d:
