@@ -78,7 +78,7 @@ def get_datetime_24_error(x):
     return datetime.strptime("{}{}{}{}{}".format(year, month, day, hour, minute), "%Y%m%d%H%M")
 
 working_directory = os.getcwd()
-with open('general_config.json') as f:
+with open('{}/general_config.json'.format(working_directory)) as f:
     config = json.load(f)
 data_directory = config['data_directory']
 save_file = "{wd}/meteo_data/{stationId}_hist_hourly.csv"

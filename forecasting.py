@@ -7,7 +7,7 @@ import os
 import utils
 
 working_directory = os.path.dirname(os.path.abspath(__file__))
-with open('general_config.json') as f:
+with open('{}/general_config.json'.format(working_directory)) as f:
     config = json.load(f)
 data_directory = config['data_directory']
 
