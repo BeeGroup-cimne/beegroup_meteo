@@ -69,7 +69,7 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             try:
                 meteo_df = meteo_df.tz_localize(pytz.UTC)
             except:
-                meteo_df = meto_df.tz_convert(pytz.UTC)
+                meteo_df = meteo_df.tz_convert(pytz.UTC)
             meteo_df = meteo_df.sort_index()
         else:
             meteo_df = None
