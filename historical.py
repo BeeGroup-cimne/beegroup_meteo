@@ -66,7 +66,10 @@ for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
             meteo_df = meteo_df.set_index('time')
             meteo_df.index = pd.to_datetime(meteo_df.index)
             meteo_df['time'] = meteo_df.index
-            meteo_df = meteo_df.tz_localize(pytz.UTC)
+            try:
+                meteo_df = meteo_df.tz_localize(pytz.UTC)
+            except:
+                meteo_df = meto_df.tz_convert(pytz.UTC)
             meteo_df = meteo_df.sort_index()
         else:
             meteo_df = None
