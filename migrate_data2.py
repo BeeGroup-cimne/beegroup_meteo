@@ -3,8 +3,12 @@ import pandas as pd
 import json
 import os
 import numpy as np
+import pytz
+
 migrate_directory = "/Users/eloigabal/Developement/CIMNE/beegroup_meteo"
 working_directory = os.getcwd()
+migrate_directory = "/opt/beegroup_meteov2/migrate_data"
+
 with open('{}/general_config.json'.format(working_directory)) as f:
     config = json.load(f)
 
@@ -22,12 +26,11 @@ for x in glob.glob("{}/migrate_data/*.csv".format(migrate_directory)):
     df.time = df.timeForecasting
     rr = df.pivot_table(index="time", columns="horizon", values=list(df.columns[meteo_vars]))
     rr.columns = rr.columns.map('_'.join)
-    rr['time'] = rr.index
+    rr['time'] = rr.index.tz_localize(pytz.UTC)
     rr['lat'] = lat
     rr['lon'] = lon
     rr['stationId'] = stationId
     headers = config['historical_header'] + config['solar_header']
-
     for y in headers:
         if y not in ['time', 'lat', 'lon', 'stationId']:
             for c in ["{}_{}".format(y, i) for i in range(0, 49)]:
@@ -36,6 +39,5 @@ for x in glob.glob("{}/migrate_data/*.csv".format(migrate_directory)):
         else:
             if y not in rr.columns:
                 rr[c] = np.nan
-
     data_file = "{wd}/{station}_forecast_hourly.csv"
     rr.to_csv(data_file.format(wd=data_directory, station=stationId), mode='a', header=True, index=False)
