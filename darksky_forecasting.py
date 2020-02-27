@@ -117,7 +117,7 @@ if __name__ == "__main__":
         try:
             hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 1)
             hist = hist.set_index('time')
-            hist.index = pd.to_datetime(hist.index)
+            hist.index = pd.to_datetime(hist.index, utc=True)
             headers = False
         except FileNotFoundError as e:
             hist = pd.DataFrame()
