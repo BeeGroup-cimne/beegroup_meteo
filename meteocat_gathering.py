@@ -2,26 +2,21 @@
 """
     scripts to gather meteo_data from meteocat using web scrapping
 """
+import argparse
 import json
+import logging
 
+import multiprocessing.pool as mp
+import pytz
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
 import re
 import pandas as pd
 import os
+import numpy as np
+from utils import read_last_csv, remove_last_lines_csv, scrap_data, get_solar_radiation, read_locations
 
-from utils import read_last_csv, remove_last_lines_csv, scrap_data
-
-working_directory = os.getcwd()
-working_directory = os.path.dirname(os.path.abspath(__file__))
-with open('{}/general_config.json'.format(working_directory)) as f:
-    config = json.load(f)
-data_directory = config['data_directory']
-data_file = "{wd}/meteo_data/{station}_hist_hourly.csv"
-now = datetime.utcnow()
-timezone = "Europe/Madrid"
-today = datetime(now.year,now.month, now.day)
 def scrap_stations():
     url = 'http://www.meteo.cat/observacions/llistat-xema'
     r = requests.get(url)
@@ -34,11 +29,11 @@ def scrap_stations():
             [list.__getitem__, "arg", 0]
         ]),
         ('latitude', 'td', 3,[
-            [unicode.replace, "arg", ",", "."],
+            [str.replace, "arg", ",", "."],
             [float, "arg"]
         ]),
         ('longitude', 'td', 4,[
-            [unicode.replace, "arg", ",", "."],
+            [str.replace, "arg", ",", "."],
             [float, "arg"]
         ]),
         ('status', 'td', 8, [
@@ -51,19 +46,20 @@ def scrap_stations():
 def scrapp_meteo_for_date(date, codi, lat, long):
     try:
         url = 'http://www.meteo.cat/observacions/xema/dades?codi={}&dia={}Z'.format(codi, date.strftime("%Y-%m-%dT%H:%M"))
-        print(url)
+        log.debug("obtaining data from {}".format(url))
         r = requests.get(url)
         html = BeautifulSoup(r.text, 'html.parser')
         table = html.select('.tblperiode')[0]
         rows = table.select('tr')
         columns = [
                       ('time', 'th', 0, [
-                          [unicode.strip, "arg"],
-                          [unicode.split, "arg"],
+                          [str.strip, "arg"],
+                          [str.split, "arg"],
                           [list.__getitem__,"arg", 0],
                           [datetime.strptime,"arg","%H:%M"],
                           [datetime.time, "arg"],
-                          [datetime.combine, date.date(), "arg"]
+                          [datetime.combine, date.date(), "arg"],
+                          [pytz.UTC.localize, "arg"]
                         ]
 
                        ),
@@ -77,47 +73,104 @@ def scrapp_meteo_for_date(date, codi, lat, long):
                     ]
         return scrap_data(columns, rows[1:], stationId=codi, latitude=lat, longitude=long)
     except Exception as e:
-        print("Error in {} {}:{}".format(codi, date, e))
+        log.critical("Error in {} {}:{}".format(codi, date, e))
         return {}
 
-
-stations = pd.DataFrame.from_records(scrap_stations())
-stations = stations[stations.status == u"Operativa"]
-
-for s in list(stations.iterrows()):
-    #read file of historical data
-    try:
-        hist = read_last_csv(data_file.format(wd=data_directory, station=s[1].stationId), 48)
-        hist.index = pd.to_datetime(hist['time'])
-        hist = hist.sort_index()
-    except:
-        hist = pd.DataFrame()
-    headers = True
-    if not hist.empty:
-        last_date = max(hist.index)
-        last_date = datetime(last_date.year, last_date.month, last_date.day)
-        hist = hist[hist.index >= last_date]
-        hist_columns = hist.columns
-        remove_last_lines_csv(data_file.format(wd=data_directory, station=s[1].stationId), len(hist.index))
-        headers = False
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--level", nargs=1, default=["CRITICAL"], help="set the log level (CRITICAL/ERROR/WARNING/INFO/DEBUG/NOTSET)")
+    args = parser.parse_args()
+    if args.level[0] in ["CRITICAL","ERROR","WARNING","INFO","DEBUG","NOTSET"]:
+        logging.basicConfig(level=args.level[0])
     else:
-        hist_columns = pd.DataFrame()
-        last_date = today - timedelta(days=365)
-    date_list = pd.date_range(last_date,today)
+        raise ValueError("The log level {} does not exist".format(args.level[0]))
+    log = logging.getLogger("meteocat")
+    log.debug("starting the meteocat gathering script")
+    working_directory = os.getcwd()
+    working_directory = os.path.dirname(os.path.abspath(__file__))
+    log.debug("working directory is: {}".format(working_directory))
+    with open('{}/general_config.json'.format(working_directory)) as f:
+        config = json.load(f)
+    log.debug("readed general config file")
+    log.debug(config)
 
-    for date in date_list:
-        new_meteo = pd.DataFrame(scrapp_meteo_for_date(date, s[1].stationId, lat=s[1].latitude, long=s[1].longitude))
-        if new_meteo.empty:
-            continue
-        new_meteo.index = new_meteo['time']
-        new_meteo = new_meteo.sort_index()
-        new_meteo = new_meteo.resample("H").mean()
-        hist = hist.append(new_meteo, sort=False)
+    data_directory = config['data_directory']
+    data_file = "{wd}/{station}_hist_hourly.csv"
+
+    now = datetime.utcnow()
+    timezone = "Europe/Madrid"
+    today = datetime(now.year,now.month, now.day)
+
+    stations = pd.DataFrame.from_records(scrap_stations())
+    stations = stations[stations.status == u"Operativa"]
+
+    try:
+        locations = read_locations(config['meteocat'])
+    except Exception as e:
+        log.debug("Unable to load locations for config {}: {}, no solar stations".format(config, e))
+        locations = None
+
+    for s in list(stations.iterrows()):
+        log.debug("obtaining data from station {}".format(s[1].stationId))
+        solar_radiation = False
+        if locations:
+            loc = [x for x in locations if x['stationId'] == s[1].stationId]
+            if loc:
+                solar_radiation = loc[0]['solar_radiation'] if 'solar_radiation' in loc[0] else False
+        try:
+            hist = read_last_csv(data_file.format(wd=data_directory, station=s[1].stationId), 48)
+            hist.index = pd.to_datetime(hist['time'])
+            hist = hist.sort_index()
+            headers = False
+        except:
+            hist = pd.DataFrame()
+            headers = True
+        if not hist.empty:
+            remove_last_lines_csv(data_file.format(wd=data_directory, station=s[1].stationId), len(hist.index))
+            last_date = max(hist.index)
+            last_date = datetime(last_date.year, last_date.month, last_date.day)
+        else:
+            last_date = today - timedelta(days=365)
+
+        date_list = pd.date_range(last_date,today)
+
+        pool = mp.ThreadPool(processes=config['processes'])
+        results = [pool.apply_async(scrapp_meteo_for_date, args=(x, s[1].stationId, s[1].latitude, s[1].longitude)) for x in date_list]
+        results = [p.get() for p in results]
+        pool.close()
+
+        df_hourly = pd.concat([pd.DataFrame.from_records(x) for x in results])
+
+        log.debug('Successful downloading process!')
+
+        df_hourly.index = df_hourly.time
+        df_hourly = df_hourly.sort_index()
+        df_hourly = df_hourly.drop_duplicates(keep="last")
+        df_hourly = df_hourly.resample('1H').mean().interpolate(limit=6).join(
+            df_hourly.resample('1H').stationId.pad())
+        df_hourly['time'] = df_hourly.index
+
+
+        if solar_radiation:
+            solar_data = get_solar_radiation(df_hourly, config, s[1].latitude, s[1].longitude)
+            if solar_data is not None:
+                solar_data = solar_data.set_index('time')
+                solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
+                df_hourly = df_hourly.join(solar_data)
+
+        hist = hist.append(df_hourly, sort=False)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='last')]
-        hist = hist.resample("H").mean()
-    hist['time'] = hist.index
-    hist['stationId'] = s[1].stationId
-    if not hist_columns.empty:
-        hist = hist[hist_columns]
-    hist.to_csv(data_file.format(wd=data_directory, station=s[1].stationId), mode='a', header=headers, index=None)
+        hist['time'] = hist.index
+        hist['lat'] = s[1].latitude
+        hist['lon'] = s[1].longitude
+        hist['stationId'] = s[1].stationId
+
+        headers = config['historical_header'] if not solar_radiation else config['historical_header'] + config[
+            'solar_header']
+
+        for x in headers:
+            if x not in hist.columns:
+                hist[x] = np.nan
+        hist = hist[headers]
+        hist.to_csv(data_file.format(wd=data_directory, station=s[1].stationId), mode='a', header=headers, index=None)
