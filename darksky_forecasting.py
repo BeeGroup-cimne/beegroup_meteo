@@ -79,7 +79,7 @@ if __name__ == "__main__":
             df_hourly.resample('1H')[['summary', 'icon', 'precipType']].pad())
 
         if solar_radiation:
-            df_hourly.time = df_hourly.index
+            df_hourly['time'] = df_hourly.index
             solar_data = utils.get_solar_radiation(df_hourly, config, lat, lon)
             df_hourly.set_index('time')
             if solar_data is not None:
@@ -92,6 +92,7 @@ if __name__ == "__main__":
         df_hourly.horizon = df_hourly.horizon.astype("int").astype("str")
 
         # Pivot to a wide table, all info in one row
+        df_hourly = df_hourly.reset_index(drop=True)
         meteo_vars = [i not in ["time", "horizon"] for i in list(df_hourly.columns)]
         df_hourly.time = [df_hourly.time[0]] * len(df_hourly.index)
         rr = df_hourly.pivot_table(index="time", columns="horizon", values=list(df_hourly.columns[meteo_vars]))
