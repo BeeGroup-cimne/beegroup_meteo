@@ -79,7 +79,7 @@ if __name__ == "__main__":
             df_hourly.resample('1H')[['summary', 'icon', 'precipType']].pad())
 
         if solar_radiation:
-            df_hourly = df_hourly.reset_index()
+            df_hourly.time = df_hourly.index
             solar_data = utils.get_solar_radiation(df_hourly, config, lat, lon)
             df_hourly.set_index('time')
             if solar_data is not None:
