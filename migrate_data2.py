@@ -3,13 +3,14 @@ import pandas as pd
 import json
 import os
 import numpy as np
-migrate_directory = "/Users/eloigabal/Developement/CIMNE/beegroup_meteo"
+migrate_directory = "/opt/beegroup_meteov2/migrate_data"
 working_directory = os.getcwd()
+working_directory = os.path.dirname(os.path.abspath(__file__))
 with open('{}/general_config.json'.format(working_directory)) as f:
     config = json.load(f)
 
 data_directory = config['data_directory']
-for x in glob.glob("{}/migrate_data/*.csv".format(migrate_directory)):
+for x in glob.glob("{}/*.csv".format(migrate_directory)):
     df = pd.read_csv(x)
     lat = x.split("/")[-1].split("_")[0]
     lon = x.split("/")[-1].split("_")[1]
