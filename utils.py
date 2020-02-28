@@ -138,7 +138,8 @@ def MG_solar_radiation(lat, lon, ts_from, ts_to, ndays_forecasted=1,add_time_for
             retrieve_data
         ])
         ts_from_ = ts_from_ + relativedelta(days=1)
-
+    if solar_data is None:
+        return None
     solar_data = solar_data.set_index("time")
     solar_data = solar_data[solar_data.index >= ts_from]
     # solar_data = solar_data[solar_data.index <= ts_to]
