@@ -80,12 +80,16 @@ if __name__ == "__main__":
                     hist = hist[hist.index >= ts_from]
                 else:
                     raise Exception()
+                hist = hist.sort_index()
+                hist = hist.loc[~hist.index.duplicated(keep='last')]
             except:
                 ts_from = dateutil.parser.parse(params['forecasting']["timestamp_from"])
                 hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId))
                 hist = hist.set_index('time')
                 hist.index = pd.to_datetime(hist.index, utc=True, errors='coerce')
                 hist = hist[hist.index >= ts_from]
+                hist = hist.sort_index()
+                hist = hist.loc[~hist.index.duplicated(keep='last')]
 
             if not hist.empty:
                 hist = hist.reset_index()
