@@ -84,7 +84,7 @@ if __name__ == "__main__":
                 ts_from = dateutil.parser.parse(params['forecasting']["timestamp_from"])
                 hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId))
                 hist = hist.set_index('time')
-                hist.index = pd.to_datetime(hist.index, utc=True)
+                hist.index = pd.to_datetime(hist.index, utc=True, errors='coerce')
                 hist = hist[hist.index >= ts_from]
 
             if not hist.empty:
