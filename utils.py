@@ -88,6 +88,13 @@ def read_last_csv(file, n):
     df = pd.read_csv(io.StringIO(u'\n'.join(last_data)))
     return df
 
+def read_first_csv(file, n):
+    f = open(file)
+    last_data = tl.head(f, n)
+    f.close()
+    df = pd.read_csv(io.StringIO(u'\n'.join(last_data)))
+    return df
+
 
 def remove_last_lines_csv(file, n):
     with open(file, 'r+b') as f:
