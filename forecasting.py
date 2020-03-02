@@ -71,13 +71,13 @@ if __name__ == "__main__":
 
             #search for the last timestamp uploaded or the general requested timestamp
             try:
-                station_info = mongo[params['forecasting']["stations_collection"]].find_one({"stationId": stationId}, sort=[('time', 1)])
+                station_info = mongo[params['forecasting']["stations_collection"]].find_one({"stationId": stationId}, sort=[('time', -1)])
                 ts_from = pytz.UTC.localize(station_info["time"])
                 hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 500)
                 hist = hist.set_index('time')
                 hist.index = pd.to_datetime(hist.index, utc=True)
                 if min(hist.index) <= ts_from:
-                    hist = hist[hist.index >= ts_from]
+                    hist = hist[hist.index > ts_from]
                 else:
                     raise Exception()
                 hist = hist.sort_index()
