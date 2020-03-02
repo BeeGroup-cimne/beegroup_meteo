@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pytz
 
-migrate_directory = "/opt/beegroup_meteov2/migrate_data"
+migrate_directory = "/Users/eloigabal/Developement/CIMNE/beegroup_meteo/migrate_data"
 working_directory = os.getcwd()
 working_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,13 +31,17 @@ for x in glob.glob("{}/*.csv".format(migrate_directory)):
     rr['lon'] = lon
     rr['stationId'] = stationId
     headers = config['meteo_header'] + config['solar_forecast_header']
+    headers_horizon = []
     for y in headers:
         if y not in ['time', 'lat', 'lon', 'stationId']:
             for c in ["{}_{}".format(y, i) for i in range(0, 49)]:
+                headers_horizon.append(c)
                 if c not in rr.columns:
                     rr[c] = np.nan
         else:
+            headers_horizon.append(y)
             if y not in rr.columns:
-                rr[c] = np.nan
+                rr[y] = np.nan
+    rr = rr[headers_horizon]
     data_file = "{wd}/{station}_forecast_hourly.csv"
     rr.to_csv(data_file.format(wd=data_directory, station=stationId), mode='a', header=True, index=False)

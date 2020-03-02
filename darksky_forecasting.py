@@ -58,8 +58,6 @@ if __name__ == "__main__":
         log.debug("Unable to load locations for config {}: {}".format(config, e))
         raise ValueError("Unable to load locations for config {}: {}".format(config, e))
 
-    now = datetime.utcnow()
-    now = pytz.UTC.localize(now)
     for loc in locations:
         stationId = loc['stationId']
         lat = loc['lat']
@@ -78,11 +76,12 @@ if __name__ == "__main__":
         if solar_radiation:
             df_hourly['time'] = df_hourly.index
             solar_data = utils.MG_solar_forecast(df_hourly, lat, lon)
-            df_hourly.set_index('time')
+            df_hourly = df_hourly.set_index('time')
             if solar_data is not None:
                 solar_data = solar_data.set_index('time')
                 solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
                 df_hourly = df_hourly.join(solar_data)
+            df_hourly = df_hourly.reset_index()
 
         now = min(df_hourly.time)
         df_hourly['horizon'] = (df_hourly.time - now) / np.timedelta64(1, 's') / 3600
@@ -102,15 +101,19 @@ if __name__ == "__main__":
         rr['stationId'] = stationId
         headers = config['meteo_header'] if not solar_radiation else config['meteo_header'] + config[
             'solar_forecast_header']
+        headers_horizon = []
         for x in headers:
             if x not in ['time', 'lat', 'lon', 'stationId']:
                 for c in ["{}_{}".format(x,i) for i in range(0,49)]:
+                    headers_horizon.append(c)
                     if c not in rr.columns:
                         rr[c] = np.nan
             else:
+                headers_horizon.append(x)
                 if x not in rr.columns:
                     rr[c] = np.nan
 
+        rr = rr[headers_horizon]
         try:
             hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 1)
             hist = hist.set_index('time')
