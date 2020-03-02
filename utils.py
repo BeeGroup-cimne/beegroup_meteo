@@ -148,6 +148,19 @@ def MG_solar_radiation(lat, lon, ts_from, ts_to, ndays_forecasted=1,add_time_for
     return solar_data
 
 
+def MG_solar_forecast(df_hourly, lat, lon):
+    ts_from_solar = min(df_hourly.time)
+    ts_to_solar = max(df_hourly.time)
+    solar_data = MG_solar_radiation(
+        lat=lat,
+        lon=lon,
+        ts_from=ts_from_solar,
+        ts_to=ts_to_solar,
+        ndays_forecasted=1,
+        add_time_forecasting=False
+    )
+    return solar_data
+
 def one_day_MG_rad(day, lat, lon, run=0, ndays_forecasted=1):
 
     # day = "2018-02-16"

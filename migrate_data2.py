@@ -30,7 +30,7 @@ for x in glob.glob("{}/*.csv".format(migrate_directory)):
     rr['lat'] = lat
     rr['lon'] = lon
     rr['stationId'] = stationId
-    headers = config['historical_header'] + config['solar_header']
+    headers = config['meteo_header'] + config['solar_forecast_header']
     for y in headers:
         if y not in ['time', 'lat', 'lon', 'stationId']:
             for c in ["{}_{}".format(y, i) for i in range(0, 49)]:

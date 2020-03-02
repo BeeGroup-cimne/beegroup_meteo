@@ -53,7 +53,7 @@ if __name__ == "__main__":
     data_file = "{wd}/{station}_forecast_hourly.csv"
 
     try:
-        locations = utils.read_locations(config['darksky'])
+        locations = utils.read_locations(config['forecast_stations'])
     except Exception as e:
         log.debug("Unable to load locations for config {}: {}".format(config, e))
         raise ValueError("Unable to load locations for config {}: {}".format(config, e))
@@ -64,10 +64,7 @@ if __name__ == "__main__":
         stationId = loc['stationId']
         lat = loc['lat']
         lon = loc['lon']
-        forecasting = loc['forecasting'] if 'forecasting' in loc else False
         solar_radiation = loc['solar_radiation'] if 'solar_radiation' in loc else False
-        if not forecasting:
-            continue
         if not stationId:
             stationId = "{:.2}_{:.2}".format(lat, lon)
 
@@ -80,7 +77,7 @@ if __name__ == "__main__":
 
         if solar_radiation:
             df_hourly['time'] = df_hourly.index
-            solar_data = utils.get_solar_radiation(df_hourly, config, lat, lon)
+            solar_data = utils.MG_solar_forecast(df_hourly, lat, lon)
             df_hourly.set_index('time')
             if solar_data is not None:
                 solar_data = solar_data.set_index('time')
@@ -103,8 +100,8 @@ if __name__ == "__main__":
         rr['lat'] = lat
         rr['lon'] = lon
         rr['stationId'] = stationId
-        headers = config['historical_header'] if not solar_radiation else config['historical_header'] + config[
-            'solar_header']
+        headers = config['meteo_header'] if not solar_radiation else config['meteo_header'] + config[
+            'solar_forecast_header']
         for x in headers:
             if x not in ['time', 'lat', 'lon', 'stationId']:
                 for c in ["{}_{}".format(x,i) for i in range(0,49)]:
