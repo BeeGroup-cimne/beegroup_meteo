@@ -29,6 +29,7 @@ if __name__ == "__main__":
     with open('{}/general_config.json'.format(working_directory)) as f:
         gconfig = json.load(f)
     data_directory = gconfig['data_directory']
+    data_file = "{wd}/{station}_historical_hourly.csv"
 
     for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         with open(config) as f:
@@ -52,96 +53,44 @@ if __name__ == "__main__":
             log.error("Unable to load locations for config {}: {}".format(config, e))
             continue
 
-        if 'gather_solar_radiation' in params['historical']:
-            solar_stations = utils.darksky_solar_stations(params['historical'], mongo)
-        else:
-            solar_stations = []
-
         # Download the data and upload it to Mongo
-        for stationId, latitude, longitude in locations:
-
+        for loc in locations:
+            stationId = loc['stationId']
+            lat = loc['lat']
+            lon = loc['lon']
             if not stationId:
-                stationId = "{lat:.2f}_{lon:.2f}".format(lat=latitude, lon=longitude)
-            data_file = "{}/meteo_data/{}_hist_hourly.csv".format(data_directory, stationId)
+                stationId = "{lat:.2f}_{lon:.2f}".format(lat=lat, lon=lon)
+
+            if not os.path.isfile(data_file.format(wd=data_directory, station=stationId)):
+                continue
+
             print("Weather forecasting data for stationId {}".format(stationId))
-            # Define the ts_from and ts_to
+
+            # search for the last timestamp uploaded or the general requested timestamp
             try:
-                station_info = mongo[params['mongodb']["stations_collection"]].find_one({"stationId": stationId})
-                ts_from = pytz.UTC.localize(station_info["historic_time"])
-                ts_from -= relativedelta(hours=48)
+                station_info = mongo[params['historical']["stations_collection"]].find_one({"stationId": stationId},
+                                                                                            sort=[('time', -1)])
+                ts_from = pytz.UTC.localize(station_info["time"])
+                hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 500)
+                hist = hist.set_index('time')
+                hist.index = pd.to_datetime(hist.index, utc=True)
+                if min(hist.index) <= ts_from:
+                    hist = hist[hist.index > ts_from]
+                else:
+                    raise Exception()
+                hist = hist.sort_index()
+                hist = hist.loc[~hist.index.duplicated(keep='last')]
             except:
-                ts_from = dateutil.parser.parse(params['historical']["timestamp_from_first_upload"])
-            ts_to = pytz.UTC.localize(datetime.utcnow())
+                ts_from = dateutil.parser.parse(params['historical']["timestamp_from"])
+                hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId))
+                hist = hist.set_index('time')
+                hist.index = pd.to_datetime(hist.index, utc=True, errors='coerce')
+                hist = hist[hist.index >= ts_from]
+                hist = hist.sort_index()
+                hist = hist.loc[~hist.index.duplicated(keep='last')]
 
-
-            if os.path.isfile(data_file):
-                meteo_df = pd.read_csv(data_file)
-                meteo_df = meteo_df.set_index('time')
-                meteo_df.index = pd.to_datetime(meteo_df.index)
-                meteo_df['time'] = meteo_df.index
-                try:
-                    meteo_df = meteo_df.tz_localize(pytz.UTC)
-                except:
-                    meteo_df = meteo_df.tz_convert(pytz.UTC)
-                meteo_df = meteo_df.sort_index()
-            else:
-                meteo_df = None
-
-            if 'gather_last_time' in params['historical'] and not params['historical']['gather_last_time']:
-                time_offset = relativedelta(hours=24)
-            else:
-                time_offset=relativedelta(hours=0)
-
-            if not meteo_df is None and ts_to - time_offset <= max(meteo_df.index):
-                r = meteo_df.loc[ts_from:ts_to]
-            elif 'keys' in params and latitude is not None and longitude is not None:
-                # Download the historical weather data
-                # check if solar cams must be activated:
-
-                gather_solar = True if stationId in solar_stations else False
-                r = historical_weather(params['keys']['darksky'], params['keys']['CAMS'], latitude, longitude, ts_from, ts_to,
-                                       csv_export=True, solar_radiation = gather_solar, wd=data_directory, stationId=stationId)['hourly']
-            else:
-                print("No data could be found by station {}".format(stationId))
-                continue
-            # Add the location info if it comes from location
-            if latitude:
-                r['latitude'] = latitude
-            if longitude:
-                r['longitude'] = longitude
-            if stationId:
-                r['stationId'] = stationId
-            r.index = pd.to_datetime(r.time)
-            # Upload the data to Mongo
-            r_d = r.to_dict('records')
-            if not r_d:
-                print("No data could be found by station {}".format(stationId))
-                continue
-            if mongo[params['historical']["mongo_collection"]].find_one({"stationId": stationId}) is None:
-                mongo[params['historical']["mongo_collection"]].insert_many(r_d)
-            else:
-                for i in xrange(len(r_d)):
-                    mongo[params['historical']["mongo_collection"]].update_many(
-                        {
-                            "stationId": stationId,
-                            "time": r_d[i]["time"]
-                        }, {
-                            "$set": r_d[i]
-                        },
-                    upsert=True)
-            print("{} items were uploaded to MongoDB".format(len(r_d)))
-            if 'GHI' in r:
-                has_solar = not r.GHI.isnull().all()
-            else:
-                has_solar = False
-            #save last time to the mongo_collection
-            last_time = max(r.index)
-            station_lat = r.latitude.dropna().unique()[0] if 'latitude' in r and len(r.latitude.dropna().unique()) >= 1 else None
-            station_lon = r.longitude.dropna().unique()[0] if 'longitude' in r and len(r.longitude.dropna().unique()) >= 1 else None
-            mongo[params['mongodb']["stations_collection"]].update(
-                {"stationId": stationId},
-                {"$set":{"historic_time": last_time, "longitude": station_lon, "latitude": station_lat, "solar_station": has_solar}},
-                upsert=True
-            )
-        print("Closing MongoDB client")
+            if not hist.empty:
+                hist = hist.reset_index()
+                mongo[params['historical']['mongo_collection']].insert_many(hist.to_dict(orient='records'))
+        log.debug("Closing MongoDB client")
         client.close()

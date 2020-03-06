@@ -29,11 +29,11 @@ if __name__ == "__main__":
     working_directory = os.path.dirname(os.path.abspath(__file__))
     log.debug("working directory is: {}".format(working_directory))
     with open('{}/general_config.json'.format(working_directory)) as f:
-        config = json.load(f)
+        gconfig = json.load(f)
     log.debug("readed general config file")
-    log.debug(config)
+    log.debug(gconfig)
 
-    data_directory = config['data_directory']
+    data_directory = gconfig['data_directory']
     data_file = "{wd}/{station}_forecast_hourly.csv"
 
     for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
@@ -94,3 +94,5 @@ if __name__ == "__main__":
             if not hist.empty:
                 hist = hist.reset_index()
                 mongo[params['forecasting']['mongo_collection']].insert_many(hist.to_dict(orient='records'))
+        log.debug("Closing MongoDB client")
+        client.close()
