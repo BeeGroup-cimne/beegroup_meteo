@@ -117,8 +117,12 @@ if __name__ == "__main__":
             loc = [x for x in locations if x['stationId'] == s[1].stationId]
             if loc:
                 solar_radiation = loc[0]['solar_radiation'] if 'solar_radiation' in loc[0] else False
+        if solar_radiation:
+            historical_rewrite = 720
+        else:
+            historical_rewrite = 48
         try:
-            hist = read_last_csv(data_file.format(wd=data_directory, station=s[1].stationId), 48)
+            hist = read_last_csv(data_file.format(wd=data_directory, station=s[1].stationId), historical_rewrite)
             hist.index = pd.to_datetime(hist['time'])
             hist = hist.sort_index()
             headers = False
@@ -130,6 +134,7 @@ if __name__ == "__main__":
             last_date = max(hist.index)
             last_date = datetime(last_date.year, last_date.month, last_date.day)
         else:
+            # TODO: set the minimum historical to some other value
             last_date = today - timedelta(days=365)
 
         date_list = pd.date_range(last_date,today)
@@ -139,7 +144,7 @@ if __name__ == "__main__":
         results = [p.get() for p in results]
         pool.close()
 
-        df_hourly = pd.concat([pd.DataFrame.from_records(x) for x in results])
+        df_hourly = pd.concat([pd.DataFrame.from_records(x) for x in results], sort=True)
 
         log.debug('Successful downloading process!')
 
@@ -150,9 +155,12 @@ if __name__ == "__main__":
             df_hourly.resample('1H').stationId.pad())
         df_hourly['time'] = df_hourly.index
 
-
         if solar_radiation:
-            solar_data = get_solar_radiation(df_hourly, config, s[1].latitude, s[1].longitude)
+            hist_temp = hist.append(df_hourly, sort=False)
+            hist_temp = hist_temp.sort_index()
+            hist_temp = hist_temp[~hist_temp.index.duplicated(keep='first')]
+            hist_temp['time'] = hist_temp.index
+            solar_data = get_solar_radiation(hist_temp, config, s[1].latitude, s[1].longitude)
             if solar_data is not None:
                 solar_data = solar_data.set_index('time')
                 solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
@@ -160,17 +168,17 @@ if __name__ == "__main__":
 
         hist = hist.append(df_hourly, sort=False)
         hist = hist.sort_index()
-        hist = hist[~hist.index.duplicated(keep='last')]
+        hist = hist[~hist.index.duplicated(keep='first')]
         hist['time'] = hist.index
         hist['lat'] = s[1].latitude
         hist['lon'] = s[1].longitude
         hist['stationId'] = s[1].stationId
 
-        headers = config['historical_header'] if not solar_radiation else config['historical_header'] + config[
-            'solar_header']
+        columns = config['meteo_header'] if not solar_radiation else config['meteo_header'] + config[
+            'solar_historical_header']
 
-        for x in headers:
+        for x in columns:
             if x not in hist.columns:
                 hist[x] = np.nan
-        hist = hist[headers]
+        hist = hist[columns]
         hist.to_csv(data_file.format(wd=data_directory, station=s[1].stationId), mode='a', header=headers, index=None)

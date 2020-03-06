@@ -54,7 +54,7 @@ if __name__ == "__main__":
     log.debug(config)
 
     try:
-        locations = utils.read_locations(config['darksky'])
+        locations = utils.read_locations(config['darksky']['stations'])
     except Exception as e:
         log.debug("Unable to load locations for config {}: {}".format(config, e))
         raise ValueError("Unable to load locations for config {}: {}".format(config, e))
@@ -77,8 +77,8 @@ if __name__ == "__main__":
             stationId = "{:.2}_{:.2}". format(lat, lon)
 
         try:
-            hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 48)
-            hist.index = pd.to_datetime(hist['time'])
+            hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 720)
+            hist.index = pd.to_datetime(hist['time'], utc=True)
             hist = hist.sort_index()
             headers = False
         except FileNotFoundError as e:
@@ -104,19 +104,27 @@ if __name__ == "__main__":
         results = [p.get() for p in results]
         pool.close()
 
-        df_hourly = pd.concat([pd.DataFrame.from_records(x) for x in results])
+        df_hourly = pd.concat([pd.DataFrame.from_records(x) for x in results],sort=True)
 
         log.debug('Successful downloading process!')
 
         df_hourly.index = df_hourly.time
         df_hourly = df_hourly.sort_index()
         df_hourly = df_hourly.drop_duplicates(keep="last")
-        df_hourly = df_hourly[df_hourly.time <= now]
+        if ts_from:
+            df_hourly = df_hourly[(ts_from <= df_hourly.time) & (df_hourly.time <= now)]
+        else:
+            df_hourly = df_hourly[df_hourly.time <= now]
+
         df_hourly = df_hourly.resample('1H').mean().interpolate(limit=6).join(df_hourly.resample('1H')[['summary','icon','precipType']].pad())
         df_hourly['time'] = df_hourly.index
 
         if solar_radiation:
-            solar_data = utils.get_solar_radiation(df_hourly, config, lat, lon)
+            hist_temp = hist.append(df_hourly, sort=False)
+            hist_temp = hist_temp.sort_index()
+            hist_temp = hist_temp[~hist_temp.index.duplicated(keep='first')]
+            hist_temp['time'] = hist_temp.index
+            solar_data = utils.get_solar_radiation(hist_temp, config, lat, lon)
             if solar_data is not None:
                 solar_data = solar_data.set_index('time')
                 solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
@@ -124,16 +132,17 @@ if __name__ == "__main__":
 
         hist = hist.append(df_hourly, sort=False)
         hist = hist.sort_index()
-        hist = hist[~hist.index.duplicated(keep='last')]
+        hist = hist[~hist.index.duplicated(keep='first')]
         hist['time'] = hist.index
         hist['lat'] = lat
         hist['lon'] = lon
         hist['stationId'] = stationId
-        headers = config['historical_header'] if not solar_radiation else config['historical_header'] + config['solar_header']
-        for x in headers:
+
+        columns = config['meteo_header'] if not solar_radiation else config['meteo_header'] + config['solar_historical_header']
+        for x in columns:
             if x not in hist.columns:
                 hist[x] = np.nan
-        hist = hist[headers]
+        hist = hist[columns]
         hist.to_csv(data_file.format(wd=data_directory, station=stationId), mode='a', header=headers, index=False)
 
 

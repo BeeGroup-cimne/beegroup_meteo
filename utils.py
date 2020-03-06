@@ -143,7 +143,7 @@ def MG_solar_radiation(lat, lon, ts_from, ts_to, ndays_forecasted=1,add_time_for
         solar_data = pd.concat([
             solar_data,
             retrieve_data
-        ])
+        ], sort=True)
         ts_from_ = ts_from_ + relativedelta(days=1)
     if solar_data is None:
         return None
@@ -221,7 +221,8 @@ def one_day_MG_rad(day, lat, lon, run=0, ndays_forecasted=1):
                             "time": pytz.UTC.localize(datetime.strptime("%sT00:00:00Z" % day,"%Y-%m-%dT%H:%M:%SZ")),
                             "GHI": 0.0
                         }]),
-                    solar_data]
+                    solar_data],
+                sort = True
                 )
                 solar_data = solar_data.reset_index(drop=True)
                 return solar_data[:(ndays_forecasted*24)]
@@ -289,25 +290,60 @@ def CAMS_solar_radiation(cams_registered_mails, lat, lon, ts_from, ts_to):
 
 
 def get_solar_radiation(df_hourly, config, lat, lon):
-    ts_from_solar = min(df_hourly.time)
+    try:
+        cams_ts_from = min(df_hourly[df_hourly.DHI.isna()].index)
+    except:
+        cams_ts_from = min(df_hourly.index)
+    try:
+        ts_from_solar = min(df_hourly[df_hourly.GHI.isna()].index)
+    except:
+        ts_from_solar= min(df_hourly.index)
+
     ts_to_solar = max(df_hourly.time)
     log.debug('Obtaining the solar radiation data...')
-    solar_data = CAMS_solar_radiation(
+    MG_boolean = False
+    cams_solar_data = CAMS_solar_radiation(
         cams_registered_mails=config['cams']['registered_emails'],
         lat=lat,
         lon=lon,
-        ts_from=ts_from_solar,
+        ts_from=cams_ts_from,
         ts_to=ts_to_solar,
     )
     # If has not been possible to download the CAMS solar radiation data, try to download the historical forecasting
     # data from Meteogalicia
-    if solar_data is None:
-        solar_data = MG_solar_radiation(
+    if cams_solar_data is None:
+        MG_boolean = True
+        MG_ts_from = ts_from_solar
+    else:
+        cams_solar_data= cams_solar_data.set_index("time")
+        na_index = cams_solar_data[cams_solar_data.GHI.isna()].index
+        if not na_index.empty:
+            MG_ts_from = min(na_index)
+            MG_boolean = True
+        elif max(cams_solar_data.index) < ts_to_solar:
+            MG_ts_from = max(cams_solar_data.index)
+            MG_boolean = True
+        else:
+            MG_boolean = False
+
+    if MG_boolean:
+        MG_solar_data = MG_solar_radiation(
             lat=lat,
             lon=lon,
-            ts_from=ts_from_solar,
+            ts_from=MG_ts_from,
             ts_to=ts_to_solar,
             ndays_forecasted=1,
             add_time_forecasting=False
         )
+    else:
+        MG_solar_data = pd.DataFrame()
+
+
+    MG_solar_data = MG_solar_data.reset_index()
+    cams_solar_data = cams_solar_data.reset_index()
+
+    solar_data = pd.concat([cams_solar_data, MG_solar_data], sort=True)
+    solar_data = solar_data.set_index("time")
+    solar_data = solar_data[~solar_data.index.duplicated(keep='first')]
+    solar_data = solar_data.reset_index()
     return solar_data
