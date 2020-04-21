@@ -82,48 +82,29 @@ if __name__ == "__main__":
                 solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
                 df_hourly = df_hourly.join(solar_data)
             df_hourly = df_hourly.reset_index()
-
+        # now is the time of forecast
         now = min(df_hourly.time)
-        df_hourly['horizon'] = (df_hourly.time - now) / np.timedelta64(1, 's') / 3600
-        df_hourly.horizon = df_hourly.horizon.astype("int").astype("str")
 
-        # Pivot to a wide table, all info in one row
-        df_hourly = df_hourly.reset_index(drop=True)
-        meteo_vars = [i not in ["time", "horizon"] for i in list(df_hourly.columns)]
-        df_hourly.time = [df_hourly.time[0]] * len(df_hourly.index)
-        rr = df_hourly.pivot_table(index="time", columns="horizon", values=list(df_hourly.columns[meteo_vars]))
-        rr.columns = rr.columns.map('_'.join)
-
-        #save the line to the file
-        rr['time'] = rr.index
-        rr['lat'] = lat
-        rr['lon'] = lon
-        rr['stationId'] = stationId
-        columns = config['meteo_header'] if not solar_radiation else config['meteo_header'] + config[
+        df_hourly['timeForecasting'] = now
+        df_hourly['lat'] = lat
+        df_hourly['lon'] = lon
+        df_hourly['stationId'] = stationId
+        columns = ['timeForecasting']+config['meteo_header'] if not solar_radiation else ['timeForecasting']+config['meteo_header'] + config[
             'solar_forecast_header']
-        columns_horizon = []
         for x in columns:
-            if x not in ['time', 'lat', 'lon', 'stationId']:
-                for c in ["{}_{}".format(x,i) for i in range(0,49)]:
-                    columns_horizon.append(c)
-                    if c not in rr.columns:
-                        rr[c] = np.nan
-            else:
-                columns_horizon.append(x)
-                if x not in rr.columns:
-                    rr[x] = np.nan
+            if x not in df_hourly.columns:
+                df_hourly[x] = np.nan
 
-        rr = rr[columns_horizon]
+        df_hourly = df_hourly[columns]
         try:
             hist = utils.read_last_csv(data_file.format(wd=data_directory, station=stationId), 1)
-            hist = hist.set_index('time')
-            hist.index = pd.to_datetime(hist.index, utc=True)
+            hist.timeForecasting = pd.to_datetime(hist.timeForecasting, utc=True)
             headers = False
         except FileNotFoundError as e:
             hist = pd.DataFrame()
             headers = True
 
-        if hist.empty or hist.index[0] != rr.index[0]:
-            rr.to_csv(data_file.format(wd=data_directory, station=stationId), mode='a', header=headers, index=False)
+        if hist.empty or hist.timeForecasting[0] != df_hourly.timeForecasting[0]:
+            df_hourly.to_csv(data_file.format(wd=data_directory, station=stationId), mode='a', header=headers, index=False)
 
 
