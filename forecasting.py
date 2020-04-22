@@ -31,7 +31,7 @@ def resampling_forecasting(x):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--level", nargs=1, default=["CRITICAL"], help="set the log level (CRITICAL/ERROR/WARNING/INFO/DEBUG/NOTSET)")
-    parser.add_argument("-h", "--how", nargs=1, default=["online"], help="set the type of data: forecasted: each row will have the measure predicted for that timestep in the 48h previous. online: each row will have the 48h prediction of the forecasting timestep")
+    parser.add_argument("-ho", "--how", nargs=1, default=["online"], help="set the type of data: forecasted: each row will have the measure predicted for that timestep in the 48h previous. online: each row will have the 48h prediction of the forecasting timestep")
     args = parser.parse_args()
     if args.level[0] in ["CRITICAL","ERROR","WARNING","INFO","DEBUG","NOTSET"]:
         logging.basicConfig(level=args.level[0])
