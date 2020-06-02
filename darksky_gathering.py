@@ -120,16 +120,18 @@ if __name__ == "__main__":
         df_hourly['time'] = df_hourly.index
 
         if solar_radiation:
-            hist_temp = hist.append(df_hourly, sort=False)
-            hist_temp = hist_temp.sort_index()
-            hist_temp = hist_temp[~hist_temp.index.duplicated(keep='first')]
-            hist_temp['time'] = hist_temp.index
-            solar_data = utils.get_solar_radiation(hist_temp, config, lat, lon)
-            if solar_data is not None:
-                solar_data = solar_data.set_index('time')
-                solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
-                df_hourly = df_hourly.join(solar_data)
-
+            try:
+                hist_temp = hist.append(df_hourly, sort=False)
+                hist_temp = hist_temp.sort_index()
+                hist_temp = hist_temp[~hist_temp.index.duplicated(keep='first')]
+                hist_temp['time'] = hist_temp.index
+                solar_data = utils.get_solar_radiation(hist_temp, config, lat, lon)
+                if solar_data is not None:
+                    solar_data = solar_data.set_index('time')
+                    solar_data = solar_data.resample('1H').mean().interpolate(limit=6)
+                    df_hourly = df_hourly.join(solar_data)
+            except:
+                pass
         hist = hist.append(df_hourly, sort=False)
         hist = hist.sort_index()
         hist = hist[~hist.index.duplicated(keep='first')]

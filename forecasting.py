@@ -101,7 +101,7 @@ if __name__ == "__main__":
                     raise Exception()
             except:
                 ts_from = dateutil.parser.parse(params['forecasting']["timestamp_from"])
-                hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId))
+                hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId), dtype={'icon': str, 'precipType': str, 'summary': str})
                 hist.timeForecasting = pd.to_datetime(hist.timeForecasting, utc=True)
                 hist.time = pd.to_datetime(hist.time, utc=True)
                 hist = hist[hist.timeForecasting >= ts_from]
