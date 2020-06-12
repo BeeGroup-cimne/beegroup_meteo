@@ -104,7 +104,7 @@ if __name__ == "__main__":
                 hist = pd.read_csv(data_file.format(wd=data_directory, station=stationId), dtype={'icon': str, 'precipType': str, 'summary': str})
                 hist.timeForecasting = pd.to_datetime(hist.timeForecasting, utc=True)
                 hist.time = pd.to_datetime(hist.time, utc=True)
-                hist = hist[hist.timeForecasting >= ts_from]
+                hist = hist[hist.timeForecasting > ts_from]
 
             if not hist.empty:
                 # Resample the timeForecasting to hourly.
@@ -124,6 +124,8 @@ if __name__ == "__main__":
                 if how == "online":
                     rr = r.pivot_table(index="timeForecasting", columns="i", values=list(r.columns[meteo_vars]))
                     rr.columns = rr.columns.map('_'.join)
+                    # we filter future forecastings for the online
+                    rr = rr[rr.index <= pytz.UTC.localize(datetime.utcnow())]
                 else:
                     rr = r.pivot_table(index="time", columns="i", values=list(r.columns[meteo_vars]))
                     rr.columns = rr.columns.map('_'.join)
