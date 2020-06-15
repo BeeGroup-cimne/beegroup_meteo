@@ -133,6 +133,7 @@ if __name__ == "__main__":
                 rr['lon'] = lon
                 rr['stationId'] = stationId
                 rr['time'] = rr.index
+                rr = rr.fillna("NaN")
                 mongo[params['forecasting']['mongo_collection']].insert_many(rr.to_dict(orient='records'))
         log.debug("Closing MongoDB client")
         client.close()
