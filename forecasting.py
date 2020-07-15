@@ -14,6 +14,7 @@ from pymongo import MongoClient
 import numpy as np
 import utils
 
+pidfile = "forecasting.PID"
 
 def resampling_forecasting(x):
     try:
@@ -53,6 +54,18 @@ if __name__ == "__main__":
 
     data_directory = gconfig['data_directory']
     data_file = "{wd}/{station}_forecast_hourly.csv"
+
+    #pidfile checking
+    if os.path.isfile('{}/{}'.format(working_directory, pidfile)):
+        with open('{}/{}'.format(working_directory, pidfile), "r") as pid:
+            last_pid = int(pid.read())
+            try:
+                os.kill(last_pid, 0)
+                exit(0)
+            except OSError:
+                pass
+    with open('{}/{}'.format(working_directory, pidfile), "w") as pid:
+        pid.write(str(os.getpid()))
 
     for config in glob.glob('{}/available_config/*.json'.format(working_directory)):
         with open(config) as f:
