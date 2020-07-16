@@ -138,7 +138,7 @@ if __name__ == "__main__":
                     rr = r.pivot_table(index="timeForecasting", columns="i", values=list(r.columns[meteo_vars]))
                     rr.columns = rr.columns.map('_'.join)
                     # we filter future forecastings for the online
-                    rr = rr[rr.index <= pytz.UTC.localize(datetime.utcnow())]
+                    rr = rr[(rr.index > ts_from )&( rr.index <= pytz.UTC.localize(datetime.utcnow()))]
                 else:
                     rr = r.pivot_table(index="time", columns="i", values=list(r.columns[meteo_vars]))
                     rr.columns = rr.columns.map('_'.join)
