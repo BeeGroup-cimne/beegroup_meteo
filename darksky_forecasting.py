@@ -70,8 +70,9 @@ if __name__ == "__main__":
         df_hourly = df_hourly.set_index('time')
         df_hourly = df_hourly.sort_index()
         df_hourly = df_hourly.drop_duplicates(keep="last")
+        pad_list = [x for x in ['summary', 'icon', 'precipType'] if x in df_hourly]
         df_hourly = df_hourly.resample('1H').mean().interpolate(limit=6).join(
-            df_hourly.resample('1H')[['summary', 'icon', 'precipType']].pad())
+            df_hourly.resample('1H')[pad_list].pad())
 
         if solar_radiation:
             df_hourly['time'] = df_hourly.index
